@@ -34,6 +34,8 @@ class OpenAILLM:
             )
             for chunk in response:
                 content = chunk.choices[0].delta.content
+                if content is None:
+                    continue
                 answer += content
                 yield content
             self.history.append({"role": "user", "content": prompt})

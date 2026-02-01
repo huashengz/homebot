@@ -31,7 +31,7 @@ class SpeechChain():
         transcript = ''.join(text for text in request_text_chunks)
         logger.info(f"Final transcript: {transcript}")
 
-        await self.asr.stop()
+        # await self.asr.stop()
         self.step = SpeechStep.LLM
 
         async for text in self.llm.agenerate(prompt=transcript):
@@ -47,10 +47,11 @@ class SpeechChain():
             if self.step != SpeechStep.ASR:
                 await asyncio.sleep(0.1)
                 continue
+            logger.info(f"Processing audio chunk of size: {len(audio_chunk)} bytes")
             await self.asr.recognize(audio_chunk)
 
     async def output(self) -> AsyncGenerator[bytes, None]:
         asyncio.create_task(self.process())
         async for chunk in self.tts.chunks():
             yield chunk
-        self.step = SpeechStep.ASR
+        # self.step = SpeechStep.ASR

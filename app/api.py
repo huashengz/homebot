@@ -1,7 +1,7 @@
 import logging
 import asyncio
 from fastapi import APIRouter, Request, WebSocket
-from app.services.chain import SpeechChain
+from app.services.chain import SpeechChain, SpeechStep
 from app.log import get_logger
 
 logger = get_logger(__name__)
@@ -30,16 +30,16 @@ async def speech(websocket: WebSocket):
     async def text_output():
         async for chunk in chain.output():
             logger.info(f"Sending audio chunk of size: {len(chunk)} bytes")
-            await websocket.send_text(chunk)
+            await websocket.send_bytes(chunk)
  
-    asyncio.create_task(text_output())
+    output_task = asyncio.create_task(text_output())
 
-    while True:
-        try:
+    try:
+        while chain.step == SpeechStep.ASR:
             data = await websocket.receive_bytes()
-            logger.info(f"Received audio chunk of size: {len(data)} bytes")
             await chain.input([data])
-        except Exception as e:
-            logger.info(f"Audio input stream ended: {e}")
-            break
-    await websocket.close()
+    except Exception as e:
+        logger.info(f"Audio input stream ended: {e}")
+    finally:
+        await output_task
+        await websocket.close()
