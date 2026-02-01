@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AnyBot - 智能语音助手</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --accent: #06b6d4;
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --border-radius: 16px;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, var(--background) 0%, #e0e7ff 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-primary);
+            background-attachment: fixed;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 95%;
+            margin: 2rem auto;
+            background: var(--surface);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 80vh;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 1.5rem;
+            text-align: center;
+            position: relative;
+            overflow: visible; /* Changed from hidden to visible to ensure logo displays properly */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            transform: rotate(30deg);
+            z-index: 0;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 0 0 0.5rem 0;
+            position: relative;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+        }
+
+        .header p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin: 0;
+            position: relative;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+
+        .header i.fas {
+            margin-right: 0.5rem;
+            font-size: 1.5rem;
+            vertical-align: middle;
+            display: inline-block;
+            transform: scale(1);
+            transition: transform 0.2s ease;
+        }
+
+        .header i.fas:hover {
+            transform: scale(1.1);
+        }
+
+        .circular-waveform-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 140px;
+            height: 140px;
+            padding: 1rem 0;
+        }
+
+        .circular-waveform {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem;
+            gap: 1.5rem;
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-height: 50vh;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 1rem 1.25rem;
+            border-radius: 18px;
+            line-height: 1.5;
+            font-size: 0.95rem;
+            animation: fadeInUp 0.3s ease-out;
+            box-shadow: var(--shadow-sm);
+            position: relative;
+            word-wrap: break-word;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.bot {
+            background: #f1f5f9;
+            color: var(--text-primary);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+
+        .controls-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .mic-selector {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .mic-selector label {
+            font-weight: 500;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .mic-select-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        #micSelect {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            background: white;
+            color: var(--text-primary);
+            transition: var(--transition);
+        }
+
+        #micSelect:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+
+        .visualizer-container {
+            display: none;
+        }
+
+        .record-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .record-btn {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 72px;
+            height: 72px;
+            font-size: 24px;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: visible; /* Changed from hidden to visible to ensure icon displays properly */
+            z-index: 2;
+            margin: 0 auto;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .record-btn i {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 100% !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            line-height: 1 !important;
+            font-size: inherit !important;
+            transform: none !important;
+            transform-origin: center !important;
+        }
+
+        .record-btn i::before {
+            display: block !important;
+            width: 100% !important;
+            height: 100% !important;
+            line-height: inherit !important;
+            font-size: inherit !important;
+        }
+
+        #recordIcon {
+            min-width: 1em;
+            min-height: 1em;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+
+        .record-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4), 0 8px 10px -6px rgba(99, 102, 241, 0.2);
+        }
+
+        .record-btn.recording i {
+            animation: pulseIcon 1.5s infinite;
+        }
+
+        @keyframes pulseIcon {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .record-btn.recording {
+            background: linear-gradient(135deg, var(--error) 0%, #dc2626 100%);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        .record-btn::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            background: linear-gradient(45deg, var(--primary), var(--secondary), var(--accent)) border-box;
+            mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+            mask-composite: exclude;
+            z-index: -1;
+        }
+
+        .record-btn.recording::after {
+            background: linear-gradient(45deg, var(--error), #dc2626) border-box;
+        }
+
+        .status {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            padding: 0.5rem;
+            min-height: 28px;
+        }
+
+        .status.connected {
+            color: var(--success);
+            font-weight: 500;
+        }
+
+        .status.recording {
+            color: var(--error);
+            font-weight: 500;
+        }
+
+        .features-grid {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                width: 95%;
+                min-height: 90vh;
+                margin: 1rem auto;
+            }
+            
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .message {
+                max-width: 90%;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                width: 98%;
+                margin: 0.5rem auto;
+                min-height: 95vh;
+            }
+            
+            .chat-container {
+                padding: 1rem;
+            }
+            
+            .header {
+                padding: 1rem;
+            }
+            
+            .header h1 {
+                font-size: 1.3rem;
+            }
+            
+            .record-btn {
+                width: 64px;
+                height: 64px;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Scrollbar styling */
+        .messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .messages::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 3px;
+        }
+
+        .messages::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        .messages::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-robot"></i> AnyBot 智能语音助手</h1>
+            <p>实时语音识别与AI对话系统</p>
+        </div>
+
+        <div class="waveform-container">
+            <canvas id="waveform"></canvas>
+        </div>
+
+        <div class="chat-container">
+            <div class="messages" id="messages"></div>
+
+            <div class="controls-section">
+                <div class="mic-selector">
+                    <label for="micSelect"><i class="fas fa-microphone-alt"></i> 选择麦克风</label>
+                    <div class="mic-select-wrapper">
+                        <select id="micSelect">
+                            <option value="">正在检测麦克风...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="record-controls">
+                    <div class="circular-waveform-container">
+                        <canvas id="circularWaveform" class="circular-waveform"></canvas>
+                        <button id="recordBtn" class="record-btn" title="开始/停止录音">
+                            <i class="fas fa-microphone" id="recordIcon"></i>
+                        </button>
+                    </div>
+
+                    <div class="status" id="status">正在连接服务...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ws;
+        let isRecording = false;
+        let mediaRecorder;
+        let audioContext, analyser, sourceNode, animationId;
+        let currentStream;
+
+        const messages = document.getElementById('messages');
+        const recordBtn = document.getElementById('recordBtn');
+        const statusDiv = document.getElementById('status');
+        const micSelect = document.getElementById('micSelect');
+        const circularWaveform = document.getElementById('circularWaveform');
+
+        // ========================
+        // Canvas & Waveform
+        // ========================
+        function resizeCanvas() {
+            const dpr = window.devicePixelRatio || 1;
+
+            // Resize circular waveform
+            const rect = circularWaveform.getBoundingClientRect();
+            const width = Math.floor(rect.width * dpr);
+            const height = Math.floor(rect.height * dpr);
+            circularWaveform.width = width;
+            circularWaveform.height = height;
+            const ctx = circularWaveform.getContext('2d');
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function drawIdleWaveform() {
+            // Since we removed the main waveform, this function is no longer needed
+            // The header waveform handles the idle animation
+        }
+
+        function drawIdleWaveform() {
+            const ctx = circularWaveform.getContext('2d');
+            const width = circularWaveform.width / (window.devicePixelRatio || 1);
+            const height = circularWaveform.height / (window.devicePixelRatio || 1);
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const radius = Math.min(width, height) * 0.4; // 40% of the smallest dimension
+            let t = 0;
+
+            function draw() {
+                ctx.clearRect(0, 0, width, height);
+                const scale = window.devicePixelRatio || 1;
+                ctx.save();
+                ctx.scale(scale, scale);
+
+                // Draw 3 concentric circles with 50% transparency
+                ctx.globalAlpha = 0.5;
+
+                // Outer circle
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius * 0.9, 0, 2 * Math.PI);
+                ctx.strokeStyle = 'rgba(99, 102, 241, 0.5)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                // Middle circle
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius * 0.7, 0, 2 * Math.PI);
+                ctx.strokeStyle = 'rgba(139, 92, 246, 0.5)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                // Inner circle
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius * 0.5, 0, 2 * Math.PI);
+                ctx.strokeStyle = 'rgba(6, 182, 212, 0.5)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                ctx.restore();
+                t += 0.03;
+                animationId = requestAnimationFrame(draw);
+            }
+            draw();
+        }
+
+        function drawWaveform(analyser) {
+            if (!analyser) return;
+            const ctx = circularWaveform.getContext('2d');
+            const width = circularWaveform.width / (window.devicePixelRatio || 1);
+            const height = circularWaveform.height / (window.devicePixelRatio || 1);
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const radius = Math.min(width, height) * 0.4; // 40% of the smallest dimension
+            const bufferLength = analyser.fftSize;
+            const dataArray = new Uint8Array(bufferLength);
+
+            function draw() {
+                analyser.getByteTimeDomainData(dataArray);
+                ctx.clearRect(0, 0, width, height);
+                const scale = window.devicePixelRatio || 1;
+                ctx.save();
+                ctx.scale(scale, scale);
+
+                // Calculate average amplitude for dynamic scaling
+                let sum = 0;
+                for (let i = 0; i < bufferLength; i++) {
+                    sum += Math.abs(dataArray[i] - 128);
+                }
+                const avgAmplitude = sum / bufferLength;
+                const dynamicScale = Math.min(Math.max(avgAmplitude / 30, 0.3), 1.5); // Scale between 0.3x and 1.5x
+
+                // Draw 3 circular waveforms that react to audio input
+                ctx.globalAlpha = 0.7;
+
+                // Draw outer circular waveform
+                ctx.beginPath();
+                const points = 120; // Number of points to draw the circle
+                for (let i = 0; i <= points; i++) {
+                    const angle = (i / points) * 2 * Math.PI;
+                    const dataIndex = Math.floor((i / points) * bufferLength);
+                    const v = dataArray[dataIndex] / 128.0 - 1.0; // Center around 0
+                    const r = radius * 0.9 + (v * radius * 0.2) * dynamicScale;
+                    const x = centerX + Math.cos(angle) * r;
+                    const y = centerY + Math.sin(angle) * r;
+
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.closePath();
+                ctx.strokeStyle = 'rgba(99, 102, 241, 0.7)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Draw middle circular waveform
+                ctx.beginPath();
+                for (let i = 0; i <= points; i++) {
+                    const angle = (i / points) * 2 * Math.PI;
+                    const dataIndex = Math.floor((i / points) * bufferLength);
+                    const v = dataArray[dataIndex] / 128.0 - 1.0; // Center around 0
+                    const r = radius * 0.7 + (v * radius * 0.15) * dynamicScale;
+                    const x = centerX + Math.cos(angle) * r;
+                    const y = centerY + Math.sin(angle) * r;
+
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.closePath();
+                ctx.strokeStyle = 'rgba(139, 92, 246, 0.7)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Draw inner circular waveform
+                ctx.beginPath();
+                for (let i = 0; i <= points; i++) {
+                    const angle = (i / points) * 2 * Math.PI;
+                    const dataIndex = Math.floor((i / points) * bufferLength);
+                    const v = dataArray[dataIndex] / 128.0 - 1.0; // Center around 0
+                    const r = radius * 0.5 + (v * radius * 0.1) * dynamicScale;
+                    const x = centerX + Math.cos(angle) * r;
+                    const y = centerY + Math.sin(angle) * r;
+
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.closePath();
+                ctx.strokeStyle = 'rgba(6, 182, 212, 0.7)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.restore();
+                animationId = requestAnimationFrame(draw);
+            }
+            draw();
+        }
+
+        // ========================
+        // UI Helpers
+        // ========================
+        function addMessage(text, sender) {
+            const div = document.createElement('div');
+            div.className = `message ${sender}`;
+            div.textContent = text;
+            messages.appendChild(div);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function setStatus(text, statusClass = '') {
+            statusDiv.textContent = text;
+            statusDiv.className = 'status';
+            if (statusClass) {
+                statusDiv.classList.add(statusClass);
+            }
+        }
+
+        // ========================
+        // WebSocket
+        // ========================
+        function connectWS() {
+            ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws');
+            ws.binaryType = 'arraybuffer';
+            ws.onopen = () => {
+                setStatus('已连接到服务器，按住麦克风开始对话', 'connected');
+                console.log('WebSocket connected');
+            };
+            ws.onmessage = (event) => {
+                console.log('Received message:', event.data);
+                addMessage(event.data, 'bot');
+            };
+            ws.onclose = () => {
+                setStatus('连接已断开，正在重连...', '');
+                console.log('WebSocket closed');
+                setTimeout(connectWS, 1500);
+            };
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                setStatus('连接出错，请检查网络', '');
+            };
+        }
+
+        // ========================
+        // Microphone
+        // ========================
+        async function updateMicList() {
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                micSelect.innerHTML = '';
+                const mics = devices.filter(d => d.kind === 'audioinput');
+                if (mics.length === 0) {
+                    micSelect.innerHTML = '<option>未检测到麦克风</option>';
+                    return;
+                }
+                mics.forEach((device, i) => {
+                    const option = document.createElement('option');
+                    option.value = device.deviceId;
+                    option.text = device.label || `麦克风 ${i + 1}`;
+                    micSelect.appendChild(option);
+                });
+            } catch (err) {
+                micSelect.innerHTML = '<option>无法访问麦克风</option>';
+                console.error('Mic list error:', err);
+            }
+        }
+
+        navigator.mediaDevices.addEventListener('devicechange', updateMicList);
+        updateMicList();
+
+        // ========================
+        // Recording Logic
+        // ========================
+        async function startRecording() {
+            if (isRecording) return;
+            if (!navigator.mediaDevices?.getUserMedia) {
+                alert('您的浏览器不支持音频录制，请使用 Chrome/Firefox/Edge 等现代浏览器。');
+                return;
+            }
+            try {
+                // Clean up any previous stream
+                if (currentStream) {
+                    currentStream.getTracks().forEach(t => t.stop());
+                    currentStream = null;
+                }
+
+                // Clean up previous audio nodes
+                if (sourceNode) {
+                    sourceNode.disconnect();
+                    sourceNode = null;
+                }
+                if (analyser) {
+                    analyser.disconnect();
+                    analyser = null;
+                }
+
+                const deviceId = micSelect.value;
+                const constraints = deviceId ? { audio: { deviceId: { exact: deviceId } } } : { audio: true };
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                currentStream = stream;
+
+                // Note: WAV format is not natively supported by MediaRecorder in most browsers
+                // Using audio/webm as it's widely supported and works well for speech
+                // Record at 16kHz and send every 40ms
+                const options = {
+                    mimeType: 'audio/webm; codecs=opus',
+                    audioBitsPerSecond: 128000 // Higher quality for 16kHz
+                };
+                mediaRecorder = new MediaRecorder(stream, options);
+
+                mediaRecorder.ondataavailable = e => {
+                    if (e.data.size > 0 && ws?.readyState === WebSocket.OPEN) {
+                        ws.send(e.data);
+                        console.log(`Sending audio chunk of size: ${e.data.size} with type: ${mediaRecorder.mimeType}`);
+                    }
+                };
+
+                // Log when recording starts and ends
+                mediaRecorder.onstart = () => {
+                    console.log('Recording started');
+                };
+
+                mediaRecorder.onstop = () => {
+                    console.log('Recording stopped');
+                };
+
+                // Start recording with 30ms time slices to send ~960 bytes per chunk
+                // At 16kHz, 16-bit mono: 16000 * 2 * 30/1000 = 960 bytes per 30ms
+                mediaRecorder.start(30); // Send data every 30ms for ~960 bytes
+
+                // Audio visualization - configure for 16kHz sampling rate
+                if (!audioContext || audioContext.state === 'closed') {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    // Set sample rate to 16kHz if possible
+                    if (audioContext.sampleRate !== 16000) {
+                        // Note: We can't force the sample rate, but we can log it
+                        console.log(`Audio context sample rate: ${audioContext.sampleRate}Hz`);
+                    }
+                }
+
+                sourceNode = audioContext.createMediaStreamSource(stream);
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 2048;
+                sourceNode.connect(analyser);
+
+                // Update the header waveform to show live recording
+                cancelAnimationFrame(animationId);
+                // For animated circular waveform, we need to continuously update
+                function updateWaveforms() {
+                    drawWaveform(analyser);
+                    animationId = requestAnimationFrame(updateWaveforms);
+                }
+                updateWaveforms();
+
+                recordBtn.classList.add('recording');
+
+                mediaRecorder.start(250);
+                isRecording = true;
+                setStatus('正在录音中...', 'recording');
+            } catch (err) {
+                setStatus('无法访问麦克风：' + (err.message || '权限被拒绝'));
+                console.error('Start recording error:', err);
+            }
+        }
+
+        function stopRecording() {
+            if (!isRecording) return;
+
+            // Stop the media recorder
+            mediaRecorder?.stop();
+
+            // Disconnect and clean up audio nodes
+            if (sourceNode) {
+                sourceNode.disconnect();
+                sourceNode = null;
+            }
+            if (analyser) {
+                analyser.disconnect();
+                analyser = null;
+            }
+
+            // Stop all tracks in the current stream
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                currentStream = null;
+            }
+
+            // Update state
+            isRecording = false;
+            recordBtn.classList.remove('recording');
+            setStatus('录音已停止，等待回复...');
+
+            cancelAnimationFrame(animationId);
+            drawIdleWaveform();
+        }
+
+        recordBtn.addEventListener('click', () => {
+            if (isRecording) {
+                stopRecording();
+            } else {
+                startRecording();
+            }
+        });
+
+        // ========================
+        // Init
+        // ========================
+        drawIdleWaveform(); // Start the idle waveform
+        connectWS();
+
+        // Prevent scroll during recording on mobile
+        document.body.addEventListener('touchmove', e => {
+            if (isRecording) e.preventDefault();
+        }, { passive: false });
+
+        // Clean up resources when page is unloaded
+        window.addEventListener('beforeunload', () => {
+            if (isRecording) {
+                stopRecording();
+            }
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+            }
+            if (audioContext) {
+                audioContext.close();
+            }
+            // Cancel any ongoing animations
+            cancelAnimationFrame(animationId);
+        });
+    </script>
+</body>
+</html>

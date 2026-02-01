@@ -1,0 +1,93 @@
+# Git Ignore for AnyBot
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+._*
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Uploads and temporary files
+uploads/*
+!uploads/.gitkeep
+temp/
+tmp/
+*.wav
+*.mp3
+*.ogg
+*.m4a
+*.flac
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Testing
+.coverage
+.pytest_cache/
+htmlcov/
+.tox/
+.nox/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Database
+*.db
+*.sqlite3
+
+# Redis dump
+dump.rdb
+
+# Docker
+.dockerignore
+
+# Node.js (if frontend is added)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+app/config/settings.py
