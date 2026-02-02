@@ -5,6 +5,7 @@ from typing import AsyncGenerator
 from app.services.chat.llm import OpenAILLM
 from app.services.voice.asr import DashscopeASR
 from app.services.voice.tts import DashscopeTTS
+from app.schemas import SentenceComplete, TextContent
 from app.log import get_logger
 
 logger = get_logger(__name__)
@@ -15,30 +16,38 @@ class SpeechStep(enum.Enum):
     TTS = "tts"
 
 class SpeechChain():
-    """语音处理链"""
-
     def __init__(self):
         self.asr = DashscopeASR()
         self.tts = DashscopeTTS()
         self.llm = OpenAILLM()
         self.step = SpeechStep.ASR
+        self.message_queue: asyncio.Queue = asyncio.Queue()
+
+    def _put_message(self, msg):
+        try:
+            self.message_queue.put_nowait(msg)
+        except asyncio.QueueFull:
+            pass
 
     async def process(self):
         request_text_chunks = []
         async for text in self.asr.texts(timeout=2.0):
+            if not request_text_chunks:
+                self._put_message(SentenceComplete())
             logger.info(f"Recognized text chunk: {text}")
             request_text_chunks.append(text)
-        transcript = ''.join(text for text in request_text_chunks)
+        transcript = ''.join(request_text_chunks)
         logger.info(f"Final transcript: {transcript}")
 
-        # await self.asr.stop()
         self.step = SpeechStep.LLM
-
+        reply_chunks = []
         async for text in self.llm.agenerate(prompt=transcript):
-            logger.info(f"Generated text chunk: {text}")
+            reply_chunks.append(text)
             await self.tts.synthesize(text=text, is_final=False)
+        full_reply = ''.join(reply_chunks)
+        if full_reply:
+            self._put_message(TextContent(content=full_reply))
         await self.tts.synthesize(text="", is_final=True)
-
         self.step = SpeechStep.TTS
 
     async def input(self, audio_stream) -> None:

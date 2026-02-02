@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AnyBot - 智能语音助手</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <title>HomeBot - 智能语音助手</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎙️</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
     <style>
         :root {
             --primary: #6366f1;
@@ -17,13 +17,14 @@
             --text-primary: #1e293b;
             --text-secondary: #64748b;
             --success: #10b981;
-            --warning: #f59e0b;
             --error: #ef4444;
-            --border-radius: 16px;
-            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --border: #e2e8f0;
+            --message-bot-bg: #f1f5f9;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --radius-full: 9999px;
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         * {
@@ -33,107 +34,45 @@
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: linear-gradient(135deg, var(--background) 0%, #e0e7ff 100%);
-            margin: 0;
-            padding: 0;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             color: var(--text-primary);
-            background-attachment: fixed;
+            padding: 1rem;
         }
 
         .container {
             max-width: 800px;
-            width: 95%;
-            margin: 2rem auto;
+            width: 100%;
             background: var(--surface);
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow-lg);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            min-height: 80vh;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            height: 90vh;
+            max-height: 900px;
         }
 
         .header {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
             color: white;
             padding: 1.5rem;
             text-align: center;
-            position: relative;
-            overflow: visible; /* Changed from hidden to visible to ensure logo displays properly */
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-            transform: rotate(30deg);
-            z-index: 0;
         }
 
         .header h1 {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin: 0 0 0.5rem 0;
-            position: relative;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
         }
 
         .header p {
-            font-size: 0.9rem;
+            font-size: 0.875rem;
             opacity: 0.9;
-            margin: 0;
-            position: relative;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
-            z-index: 1;
-        }
-
-        .header i.fas {
-            margin-right: 0.5rem;
-            font-size: 1.5rem;
-            vertical-align: middle;
-            display: inline-block;
-            transform: scale(1);
-            transition: transform 0.2s ease;
-        }
-
-        .header i.fas:hover {
-            transform: scale(1.1);
-        }
-
-        .circular-waveform-container {
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 140px;
-            height: 140px;
-            padding: 1rem 0;
-        }
-
-        .circular-waveform {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
         }
 
         .chat-container {
@@ -142,6 +81,7 @@
             flex-direction: column;
             padding: 1.5rem;
             gap: 1.5rem;
+            min-height: 0;
         }
 
         .messages {
@@ -149,850 +89,592 @@
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 1rem;
-            max-height: 50vh;
+            gap: 0.75rem;
+        }
+
+        .messages::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .messages::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 2px;
         }
 
         .message {
-            max-width: 80%;
-            padding: 1rem 1.25rem;
-            border-radius: 18px;
+            max-width: 75%;
+            padding: 0.875rem 1rem;
+            border-radius: var(--radius-md);
             line-height: 1.5;
-            font-size: 0.95rem;
-            animation: fadeInUp 0.3s ease-out;
-            box-shadow: var(--shadow-sm);
-            position: relative;
+            font-size: 0.9375rem;
+            animation: fadeIn 0.3s ease;
             word-wrap: break-word;
         }
 
-        @keyframes fadeInUp {
+        @keyframes fadeIn {
             from {
                 opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
+                transform: translateY(8px);
             }
         }
 
         .message.user {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
             color: white;
             align-self: flex-end;
             border-bottom-right-radius: 4px;
         }
 
         .message.bot {
-            background: #f1f5f9;
+            background: var(--message-bot-bg);
             color: var(--text-primary);
             align-self: flex-start;
             border-bottom-left-radius: 4px;
-        }
-
-        .controls-section {
             display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        .mic-selector {
-            display: flex;
-            flex-direction: column;
+            flex-wrap: wrap;
+            align-items: center;
             gap: 0.5rem;
         }
 
-        .mic-selector label {
-            font-weight: 500;
-            color: var(--text-primary);
-            font-size: 0.9rem;
+        .play-audio-btn {
+            margin-top: 0.5rem;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            background: var(--surface);
+            cursor: pointer;
+            color: var(--text-secondary);
         }
 
-        .mic-select-wrapper {
+        .play-audio-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .mic-selector {
             display: flex;
             align-items: center;
             gap: 0.75rem;
         }
 
-        #micSelect {
+        .mic-selector label {
+            font-weight: 500;
+            font-size: 0.875rem;
+            white-space: nowrap;
+        }
+
+        .mic-select {
             flex: 1;
-            padding: 0.75rem 1rem;
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            font-size: 0.9rem;
+            padding: 0.625rem 0.875rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            font-size: 0.875rem;
             background: white;
             color: var(--text-primary);
-            transition: var(--transition);
+            transition: border-color var(--transition);
         }
 
-        #micSelect:focus {
+        .mic-select:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
         }
 
-        .visualizer-container {
-            display: none;
-        }
-
-        .record-controls {
+        .record-section {
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 1rem;
         }
 
+        .waveform-wrapper {
+            position: relative;
+            width: 120px;
+            height: 120px;
+        }
+
+        .waveform-canvas {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
         .record-btn {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
             color: white;
             border: none;
-            border-radius: 50%;
-            width: 72px;
-            height: 72px;
-            font-size: 24px;
+            border-radius: var(--radius-full);
+            width: 64px;
+            height: 64px;
+            font-size: 1.5rem;
             cursor: pointer;
-            transition: var(--transition);
-            box-shadow: var(--shadow-lg);
+            transition: transform var(--transition);
+            box-shadow: var(--shadow);
             display: flex;
             align-items: center;
             justify-content: center;
-            position: relative;
-            overflow: visible; /* Changed from hidden to visible to ensure icon displays properly */
-            z-index: 2;
-            margin: 0 auto;
-            text-align: center;
-            vertical-align: middle;
         }
 
-        .record-btn i {
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            width: 100% !important;
-            height: 100% !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            line-height: 1 !important;
-            font-size: inherit !important;
-            transform: none !important;
-            transform-origin: center !important;
+        .record-btn:hover:not(:disabled) {
+            transform: translate(-50%, -50%) scale(1.05);
         }
 
-        .record-btn i::before {
-            display: block !important;
-            width: 100% !important;
-            height: 100% !important;
-            line-height: inherit !important;
-            font-size: inherit !important;
-        }
-
-        #recordIcon {
-            min-width: 1em;
-            min-height: 1em;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-        }
-
-        .record-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4), 0 8px 10px -6px rgba(99, 102, 241, 0.2);
-        }
-
-        .record-btn.recording i {
-            animation: pulseIcon 1.5s infinite;
-        }
-
-        @keyframes pulseIcon {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
+        .record-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
 
         .record-btn.recording {
-            background: linear-gradient(135deg, var(--error) 0%, #dc2626 100%);
+            background: linear-gradient(135deg, var(--error), #dc2626);
             animation: pulse 1.5s infinite;
         }
 
         @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-            70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-        }
-
-        .record-btn::after {
-            content: '';
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            border-radius: 50%;
-            border: 2px solid transparent;
-            background: linear-gradient(45deg, var(--primary), var(--secondary), var(--accent)) border-box;
-            mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
-            mask-composite: exclude;
-            z-index: -1;
-        }
-
-        .record-btn.recording::after {
-            background: linear-gradient(45deg, var(--error), #dc2626) border-box;
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+            }
+            50% {
+                box-shadow: 0 0 0 12px rgba(239, 68, 68, 0);
+            }
         }
 
         .status {
             text-align: center;
             color: var(--text-secondary);
-            font-size: 0.9rem;
-            padding: 0.5rem;
-            min-height: 28px;
+            font-size: 0.875rem;
+            min-height: 1.25rem;
         }
 
         .status.connected {
             color: var(--success);
-            font-weight: 500;
         }
 
         .status.recording {
             color: var(--error);
-            font-weight: 500;
         }
 
-        .features-grid {
-            display: none;
-        }
+        @media (max-width: 640px) {
+            body {
+                padding: 0.5rem;
+            }
 
-        @media (max-width: 768px) {
             .container {
-                width: 95%;
-                min-height: 90vh;
-                margin: 1rem auto;
+                height: 95vh;
             }
-            
-            .header h1 {
-                font-size: 1.5rem;
-            }
-            
-            .message {
-                max-width: 90%;
-            }
-            
-            .features-grid {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
 
-        @media (max-width: 480px) {
-            .container {
-                width: 98%;
-                margin: 0.5rem auto;
-                min-height: 95vh;
-            }
-            
-            .chat-container {
-                padding: 1rem;
-            }
-            
             .header {
                 padding: 1rem;
             }
-            
+
             .header h1 {
-                font-size: 1.3rem;
+                font-size: 1.25rem;
             }
-            
+
+            .chat-container {
+                padding: 1rem;
+                gap: 1rem;
+            }
+
+            .message {
+                max-width: 85%;
+            }
+
+            .waveform-wrapper {
+                width: 100px;
+                height: 100px;
+            }
+
             .record-btn {
-                width: 64px;
-                height: 64px;
+                width: 56px;
+                height: 56px;
+                font-size: 1.25rem;
             }
-            
-            .features-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* Scrollbar styling */
-        .messages::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .messages::-webkit-scrollbar-track {
-            background: #f1f5f9;
-            border-radius: 3px;
-        }
-
-        .messages::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 3px;
-        }
-
-        .messages::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1><i class="fas fa-robot"></i> AnyBot 智能语音助手</h1>
-            <p>实时语音识别与AI对话系统</p>
-        </div>
-
-        <div class="waveform-container">
-            <canvas id="waveform"></canvas>
+            <h1>🎙️ HomeBot</h1>
+            <p>智能语音助手</p>
         </div>
 
         <div class="chat-container">
             <div class="messages" id="messages"></div>
 
-            <div class="controls-section">
+            <div class="controls">
                 <div class="mic-selector">
-                    <label for="micSelect"><i class="fas fa-microphone-alt"></i> 选择麦克风</label>
-                    <div class="mic-select-wrapper">
-                        <select id="micSelect">
-                            <option value="">正在检测麦克风...</option>
-                        </select>
-                    </div>
+                    <label for="micSelect">麦克风</label>
+                    <select id="micSelect" class="mic-select">
+                        <option value="">正在检测...</option>
+                    </select>
                 </div>
 
-                <div class="record-controls">
-                    <div class="circular-waveform-container">
-                        <canvas id="circularWaveform" class="circular-waveform"></canvas>
+                <div class="record-section">
+                    <div class="waveform-wrapper">
+                        <canvas id="waveform" class="waveform-canvas"></canvas>
                         <button id="recordBtn" class="record-btn" title="开始/停止录音">
-                            <i class="fas fa-microphone" id="recordIcon"></i>
+                            <span id="recordIcon">🎤</span>
                         </button>
                     </div>
-
-                    <div class="status" id="status">正在连接服务...</div>
+                    <div class="status" id="status">正在连接...</div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        let ws;
-        let isRecording = false;
-        let mediaRecorder;
-        let audioContext, analyser, sourceNode, animationId;
-        let currentStream;
+        const App = {
+            ws: null,
+            isRecording: false,
+            audioContext: null,
+            analyser: null,
+            currentStream: null,
+            animationId: null,
+            workletNode: null,
+            currentTurnAudioChunks: [],
+            lastBotMessageEl: null,
 
-        const messages = document.getElementById('messages');
-        const recordBtn = document.getElementById('recordBtn');
-        const statusDiv = document.getElementById('status');
-        const micSelect = document.getElementById('micSelect');
-        const circularWaveform = document.getElementById('circularWaveform');
+            elements: {
+                messages: document.getElementById('messages'),
+                recordBtn: document.getElementById('recordBtn'),
+                recordIcon: document.getElementById('recordIcon'),
+                status: document.getElementById('status'),
+                micSelect: document.getElementById('micSelect'),
+                waveform: document.getElementById('waveform')
+            },
 
-        // ========================
-        // Canvas & Waveform
-        // ========================
-        function resizeCanvas() {
-            const dpr = window.devicePixelRatio || 1;
+            init() {
+                this.setupCanvas();
+                this.setupEventListeners();
+                this.updateMicList();
+                this.connectWebSocket();
+                this.drawIdleWaveform();
+            },
 
-            // Resize circular waveform
-            const rect = circularWaveform.getBoundingClientRect();
-            const width = Math.floor(rect.width * dpr);
-            const height = Math.floor(rect.height * dpr);
-            circularWaveform.width = width;
-            circularWaveform.height = height;
-            const ctx = circularWaveform.getContext('2d');
-            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        }
+            setupCanvas() {
+                const resize = () => {
+                    const dpr = window.devicePixelRatio || 1;
+                    const rect = this.elements.waveform.getBoundingClientRect();
+                    this.elements.waveform.width = rect.width * dpr;
+                    this.elements.waveform.height = rect.height * dpr;
+                    const ctx = this.elements.waveform.getContext('2d');
+                    ctx.scale(dpr, dpr);
+                };
+                window.addEventListener('resize', resize);
+                resize();
+            },
 
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
-
-        function drawIdleWaveform() {
-            // Since we removed the main waveform, this function is no longer needed
-            // The header waveform handles the idle animation
-        }
-
-        function drawIdleWaveform() {
-            const ctx = circularWaveform.getContext('2d');
-            const width = circularWaveform.width / (window.devicePixelRatio || 1);
-            const height = circularWaveform.height / (window.devicePixelRatio || 1);
-            const centerX = width / 2;
-            const centerY = height / 2;
-            const radius = Math.min(width, height) * 0.4; // 40% of the smallest dimension
-            let t = 0;
-
-            function draw() {
-                ctx.clearRect(0, 0, width, height);
-                const scale = window.devicePixelRatio || 1;
-                ctx.save();
-                ctx.scale(scale, scale);
-
-                // Draw 3 concentric circles with 50% transparency
-                ctx.globalAlpha = 0.5;
-
-                // Outer circle
-                ctx.beginPath();
-                ctx.arc(centerX, centerY, radius * 0.9, 0, 2 * Math.PI);
-                ctx.strokeStyle = 'rgba(99, 102, 241, 0.5)';
-                ctx.lineWidth = 1;
-                ctx.stroke();
-
-                // Middle circle
-                ctx.beginPath();
-                ctx.arc(centerX, centerY, radius * 0.7, 0, 2 * Math.PI);
-                ctx.strokeStyle = 'rgba(139, 92, 246, 0.5)';
-                ctx.lineWidth = 1;
-                ctx.stroke();
-
-                // Inner circle
-                ctx.beginPath();
-                ctx.arc(centerX, centerY, radius * 0.5, 0, 2 * Math.PI);
-                ctx.strokeStyle = 'rgba(6, 182, 212, 0.5)';
-                ctx.lineWidth = 1;
-                ctx.stroke();
-
-                ctx.restore();
-                t += 0.03;
-                animationId = requestAnimationFrame(draw);
-            }
-            draw();
-        }
-
-        function drawWaveform(analyser) {
-            if (!analyser) return;
-            const ctx = circularWaveform.getContext('2d');
-            const width = circularWaveform.width / (window.devicePixelRatio || 1);
-            const height = circularWaveform.height / (window.devicePixelRatio || 1);
-            const centerX = width / 2;
-            const centerY = height / 2;
-            const radius = Math.min(width, height) * 0.4; // 40% of the smallest dimension
-            const bufferLength = analyser.fftSize;
-            const dataArray = new Uint8Array(bufferLength);
-
-            function draw() {
-                analyser.getByteTimeDomainData(dataArray);
-                ctx.clearRect(0, 0, width, height);
-                const scale = window.devicePixelRatio || 1;
-                ctx.save();
-                ctx.scale(scale, scale);
-
-                // Calculate average amplitude for dynamic scaling
-                let sum = 0;
-                for (let i = 0; i < bufferLength; i++) {
-                    sum += Math.abs(dataArray[i] - 128);
-                }
-                const avgAmplitude = sum / bufferLength;
-                const dynamicScale = Math.min(Math.max(avgAmplitude / 30, 0.3), 1.5); // Scale between 0.3x and 1.5x
-
-                // Draw 3 circular waveforms that react to audio input
-                ctx.globalAlpha = 0.7;
-
-                // Draw outer circular waveform
-                ctx.beginPath();
-                const points = 120; // Number of points to draw the circle
-                for (let i = 0; i <= points; i++) {
-                    const angle = (i / points) * 2 * Math.PI;
-                    const dataIndex = Math.floor((i / points) * bufferLength);
-                    const v = dataArray[dataIndex] / 128.0 - 1.0; // Center around 0
-                    const r = radius * 0.9 + (v * radius * 0.2) * dynamicScale;
-                    const x = centerX + Math.cos(angle) * r;
-                    const y = centerY + Math.sin(angle) * r;
-
-                    if (i === 0) {
-                        ctx.moveTo(x, y);
-                    } else {
-                        ctx.lineTo(x, y);
-                    }
-                }
-                ctx.closePath();
-                ctx.strokeStyle = 'rgba(99, 102, 241, 0.7)';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-
-                // Draw middle circular waveform
-                ctx.beginPath();
-                for (let i = 0; i <= points; i++) {
-                    const angle = (i / points) * 2 * Math.PI;
-                    const dataIndex = Math.floor((i / points) * bufferLength);
-                    const v = dataArray[dataIndex] / 128.0 - 1.0; // Center around 0
-                    const r = radius * 0.7 + (v * radius * 0.15) * dynamicScale;
-                    const x = centerX + Math.cos(angle) * r;
-                    const y = centerY + Math.sin(angle) * r;
-
-                    if (i === 0) {
-                        ctx.moveTo(x, y);
-                    } else {
-                        ctx.lineTo(x, y);
-                    }
-                }
-                ctx.closePath();
-                ctx.strokeStyle = 'rgba(139, 92, 246, 0.7)';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-
-                // Draw inner circular waveform
-                ctx.beginPath();
-                for (let i = 0; i <= points; i++) {
-                    const angle = (i / points) * 2 * Math.PI;
-                    const dataIndex = Math.floor((i / points) * bufferLength);
-                    const v = dataArray[dataIndex] / 128.0 - 1.0; // Center around 0
-                    const r = radius * 0.5 + (v * radius * 0.1) * dynamicScale;
-                    const x = centerX + Math.cos(angle) * r;
-                    const y = centerY + Math.sin(angle) * r;
-
-                    if (i === 0) {
-                        ctx.moveTo(x, y);
-                    } else {
-                        ctx.lineTo(x, y);
-                    }
-                }
-                ctx.closePath();
-                ctx.strokeStyle = 'rgba(6, 182, 212, 0.7)';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-
-                ctx.restore();
-                animationId = requestAnimationFrame(draw);
-            }
-            draw();
-        }
-
-        // ========================
-        // UI Helpers
-        // ========================
-        function addMessage(text, sender) {
-            const div = document.createElement('div');
-            div.className = `message ${sender}`;
-            div.textContent = text;
-            messages.appendChild(div);
-            messages.scrollTop = messages.scrollHeight;
-        }
-
-        function setStatus(text, statusClass = '') {
-            statusDiv.textContent = text;
-            statusDiv.className = 'status';
-            if (statusClass) {
-                statusDiv.classList.add(statusClass);
-            }
-        }
-
-        // ========================
-        // WebSocket
-        // ========================
-        function connectWS() {
-            ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws');
-            ws.binaryType = 'arraybuffer';
-            ws.onopen = () => {
-                setStatus('已连接到服务器，按住麦克风开始对话', 'connected');
-                console.log('WebSocket connected');
-            };
-            // Create audio element for playing MP3 data
-            const audioElement = new Audio();
-            audioElement.autoplay = true;
-
-            ws.onmessage = (event) => {
-                console.log('Received message:', event.data);
-
-                // Check if the received data is binary (likely MP3 audio)
-                if (event.data instanceof Blob) {
-                    // Convert blob to URL and play as audio
-                    const audioUrl = URL.createObjectURL(event.data);
-                    audioElement.src = audioUrl;
-
-                    // Clean up the URL after playback
-                    audioElement.onended = () => {
-                        URL.revokeObjectURL(audioUrl);
-                    };
-
-                    audioElement.onerror = () => {
-                        URL.revokeObjectURL(audioUrl);
-                        console.error('Error playing audio');
-                    };
-                } else {
-                    // Text message - add to chat
-                    addMessage(event.data, 'bot');
-                }
-            };
-            ws.onclose = () => {
-                setStatus('连接已断开，正在重连...', '');
-                console.log('WebSocket closed');
-                setTimeout(connectWS, 1500);
-            };
-            ws.onerror = (error) => {
-                console.error('WebSocket error:', error);
-                setStatus('连接出错，请检查网络', '');
-            };
-        }
-
-        // ========================
-        // Microphone
-        // ========================
-        async function updateMicList() {
-            try {
-                const devices = await navigator.mediaDevices.enumerateDevices();
-                micSelect.innerHTML = '';
-                const mics = devices.filter(d => d.kind === 'audioinput');
-                if (mics.length === 0) {
-                    micSelect.innerHTML = '<option>未检测到麦克风</option>';
-                    return;
-                }
-                mics.forEach((device, i) => {
-                    const option = document.createElement('option');
-                    option.value = device.deviceId;
-                    option.text = device.label || `麦克风 ${i + 1}`;
-                    micSelect.appendChild(option);
+            setupEventListeners() {
+                this.elements.recordBtn.addEventListener('click', () => {
+                    this.isRecording ? this.stopRecording() : this.startRecording();
                 });
-            } catch (err) {
-                micSelect.innerHTML = '<option>无法访问麦克风</option>';
-                console.error('Mic list error:', err);
-            }
-        }
+                navigator.mediaDevices.addEventListener('devicechange', () => this.updateMicList());
+                window.addEventListener('beforeunload', () => this.cleanup());
+            },
 
-        navigator.mediaDevices.addEventListener('devicechange', updateMicList);
-        updateMicList();
+            addMessage(text, sender) {
+                const div = document.createElement('div');
+                div.className = `message ${sender}`;
+                div.textContent = text;
+                this.elements.messages.appendChild(div);
+                this.elements.messages.scrollTop = this.elements.messages.scrollHeight;
+                return div;
+            },
 
-        // ========================
-        // Recording Logic
-        // ========================
-        async function startRecording() {
-            if (isRecording) return;
-            if (!navigator.mediaDevices?.getUserMedia) {
-                alert('您的浏览器不支持音频录制，请使用 Chrome/Firefox/Edge 等现代浏览器。');
-                return;
-            }
-            try {
-                // Clean up any previous stream
-                if (currentStream) {
-                    currentStream.getTracks().forEach(t => t.stop());
-                    currentStream = null;
-                }
-
-                // Clean up previous audio nodes
-                if (sourceNode) {
-                    sourceNode.disconnect();
-                    sourceNode = null;
-                }
-                if (analyser) {
-                    analyser.disconnect();
-                    analyser = null;
-                }
-
-                const deviceId = micSelect.value;
-                // For PCM recording, we need to use AudioContext to capture raw samples
-                const constraints = {
-                    audio: {
-                        deviceId: deviceId ? { exact: deviceId } : undefined,
-                        sampleRate: 16000,
-                        channelCount: 1,
-                        echoCancellation: false,
-                        noiseSuppression: false
-                    }
+            addPlayButton(msgEl, blob) {
+                if (!msgEl || !blob) return;
+                const btn = document.createElement('button');
+                btn.className = 'play-audio-btn';
+                btn.textContent = '🔊 播放';
+                btn.type = 'button';
+                const url = URL.createObjectURL(blob);
+                btn.onclick = () => {
+                    const a = new Audio(url);
+                    a.play();
+                    a.onended = () => URL.revokeObjectURL(url);
                 };
-                const stream = await navigator.mediaDevices.getUserMedia(constraints);
-                currentStream = stream;
+                msgEl.appendChild(btn);
+            },
 
-                // Create audio context with 16kHz sample rate
-                audioContext = new (window.AudioContext || window.webkitAudioContext)({sampleRate: 16000});
+            setStatus(text, className = '') {
+                this.elements.status.textContent = text;
+                this.elements.status.className = 'status';
+                if (className) this.elements.status.classList.add(className);
+            },
 
-                // Create script processor to capture raw PCM data
-                const bufferSize = 4096; // Buffer size for processing
-                const scriptProcessor = audioContext.createScriptProcessor(bufferSize, 1, 1);
+            connectWebSocket() {
+                const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+                this.ws = new WebSocket(`${protocol}//${location.host}/ws`);
+                this.ws.binaryType = 'arraybuffer';
+                this.currentTurnAudioChunks = [];
+                this.lastBotMessageEl = null;
 
-                // Connect audio source to script processor
-                const source = audioContext.createMediaStreamSource(stream);
-                source.connect(scriptProcessor);
-                scriptProcessor.connect(audioContext.destination);
-
-                // Store WebSocket reference for sending data
-                const wsRef = ws;
-
-                // Function to convert float32 audio data to 16-bit PCM
-                function floatTo16BitPCM(output, offset, input) {
-                    for (let i = 0; i < input.length; i++, offset += 2) {
-                        const s = Math.max(-1, Math.min(1, input[i]));
-                        output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true); // little endian
-                    }
-                }
-
-                // Function to convert PCM data to WAV format
-                function pcmToWav(samples, sampleRate, numChannels) {
-                    const buffer = new ArrayBuffer(44 + samples.length * 2);
-                    const view = new DataView(buffer);
-
-                    // RIFF identifier
-                    writeString(view, 0, 'RIFF');
-                    // RIFF chunk length (file size - 8)
-                    view.setUint32(4, 36 + samples.length * 2, true);
-                    // RIFF type
-                    writeString(view, 8, 'WAVE');
-                    // Format chunk identifier
-                    writeString(view, 12, 'fmt ');
-                    // Format chunk length
-                    view.setUint32(16, 16, true);
-                    // Sample format (raw)
-                    view.setUint16(20, 1, true);
-                    // Channel count
-                    view.setUint16(22, numChannels, true);
-                    // Sample rate
-                    view.setUint32(24, sampleRate, true);
-                    // Byte rate (sampleRate * numChannels * bytesPerSample)
-                    view.setUint32(28, sampleRate * numChannels * 2, true);
-                    // Block align (numChannels * bytesPerSample)
-                    view.setUint16(32, numChannels * 2, true);
-                    // Bits per sample
-                    view.setUint16(34, 16, true);
-                    // Data chunk identifier
-                    writeString(view, 36, 'data');
-                    // Data chunk length
-                    view.setUint32(40, samples.length * 2, true);
-
-                    // Write PCM samples
-                    floatTo16BitPCM(view, 44, samples);
-
-                    return buffer;
-                }
-
-                function writeString(view, offset, string) {
-                    for (let i = 0; i < string.length; i++) {
-                        view.setUint8(offset + i, string.charCodeAt(i));
-                    }
-                }
-
-                // Buffer to accumulate audio data
-                let audioBuffer = new ArrayBuffer(0);
-                let audioBufferView = new DataView(audioBuffer);
-
-                // Handle audio processing
-                scriptProcessor.onaudioprocess = (e) => {
-                    if (!isRecording) return;
-
-                    const inputData = e.inputBuffer.getChannelData(0); // Mono channel
-                    const newBuffer = new ArrayBuffer(inputData.length * 2); // 2 bytes per sample (16-bit)
-                    const newView = new DataView(newBuffer);
-                    floatTo16BitPCM(newView, 0, inputData);
-
-                    // Append to accumulated buffer
-                    const tmp = new Uint8Array(audioBuffer.byteLength + newBuffer.byteLength);
-                    tmp.set(new Uint8Array(audioBuffer), 0);
-                    tmp.set(new Uint8Array(newBuffer), audioBuffer.byteLength);
-                    audioBuffer = tmp.buffer;
-                    audioBufferView = new DataView(audioBuffer);
-
-                    // Send data every 3200 bytes
-                    if (audioBuffer.byteLength >= 3200) {
-                        const chunkToSend = audioBuffer.slice(0, 3200);
-                        if (wsRef?.readyState === WebSocket.OPEN) {
-                            wsRef.send(chunkToSend);
-                            console.log(`Sending PCM audio chunk of size: ${chunkToSend.byteLength}`);
-                        }
-
-                        // Keep remaining data in buffer
-                        audioBuffer = audioBuffer.slice(3200);
-                        audioBufferView = new DataView(audioBuffer);
-                    }
+                this.ws.onopen = () => {
+                    this.setStatus('已连接，点击麦克风开始对话', 'connected');
+                    this.elements.recordBtn.disabled = false;
                 };
 
-                // Store reference to script processor to disconnect later
-                mediaRecorder = { // Using mediaRecorder variable to store our custom recorder
-                    stop: () => {
-                        if (scriptProcessor) {
-                            scriptProcessor.disconnect();
+                this.ws.onmessage = (event) => {
+                    if (event.data instanceof ArrayBuffer || event.data instanceof Blob) {
+                        this.currentTurnAudioChunks.push(event.data instanceof ArrayBuffer ? new Uint8Array(event.data) : event.data);
+                        return;
+                    }
+                    try {
+                        const msg = JSON.parse(event.data);
+                        if (msg.type === 'sentence_complete') {
+                            this.stopRecording();
+                            this.elements.recordBtn.disabled = true;
+                            return;
                         }
-                        if (source) {
-                            source.disconnect();
+                        if (msg.type === 'text') {
+                            this.lastBotMessageEl = this.addMessage(msg.content, 'bot');
+                            return;
                         }
-                        if (audioContext && audioContext.state !== 'closed') {
-                            audioContext.close();
+                        if (msg.type === 'turn_done') {
+                            if (this.currentTurnAudioChunks.length && this.lastBotMessageEl) {
+                                const blob = new Blob(this.currentTurnAudioChunks, { type: 'audio/mpeg' });
+                                this.addPlayButton(this.lastBotMessageEl, blob);
+                            }
+                            this.currentTurnAudioChunks = [];
+                            this.lastBotMessageEl = null;
+                            this.setStatus('已连接，点击麦克风开始对话', 'connected');
+                            this.elements.recordBtn.disabled = false;
                         }
-                    },
-                    stream: stream
+                    } catch (_) {}
                 };
 
-                console.log('Started PCM recording at 16kHz, sending 3200-byte chunks');
+                this.ws.onclose = () => {
+                    this.setStatus('连接断开，正在重连...');
+                    this.elements.recordBtn.disabled = true;
+                    setTimeout(() => this.connectWebSocket(), 1500);
+                };
 
-                // Audio visualization - reuse the existing audio context and source
-                analyser = audioContext.createAnalyser();
-                analyser.fftSize = 2048;
-                source.connect(analyser); // Connect the same source to the analyser
+                this.ws.onerror = () => {
+                    this.setStatus('连接错误');
+                };
+            },
 
-                // Update the header waveform to show live recording
-                cancelAnimationFrame(animationId);
-                // For animated circular waveform, we need to continuously update
-                function updateWaveforms() {
-                    drawWaveform(analyser);
-                    animationId = requestAnimationFrame(updateWaveforms);
+            async updateMicList() {
+                try {
+                    const devices = await navigator.mediaDevices.enumerateDevices();
+                    const mics = devices.filter(d => d.kind === 'audioinput');
+                    this.elements.micSelect.innerHTML = mics.length
+                        ? mics.map((d, i) => `<option value="${d.deviceId}">${d.label || `麦克风 ${i + 1}`}</option>`).join('')
+                        : '<option>未检测到麦克风</option>';
+                } catch (err) {
+                    this.elements.micSelect.innerHTML = '<option>无法访问麦克风</option>';
                 }
-                updateWaveforms();
+            },
 
-                recordBtn.classList.add('recording');
+            drawIdleWaveform() {
+                const ctx = this.elements.waveform.getContext('2d');
+                const width = this.elements.waveform.width / (window.devicePixelRatio || 1);
+                const height = this.elements.waveform.height / (window.devicePixelRatio || 1);
+                const centerX = width / 2;
+                const centerY = height / 2;
+                const radius = Math.min(width, height) * 0.35;
+                let t = 0;
 
-                isRecording = true;
-                setStatus('正在录音中...', 'recording');
-            } catch (err) {
-                setStatus('无法访问麦克风：' + (err.message || '权限被拒绝'));
-                console.error('Start recording error:', err);
+                const draw = () => {
+                    ctx.clearRect(0, 0, width, height);
+                    ctx.globalAlpha = 0.5;
+
+                    [0.8, 0.6, 0.4].forEach((r, i) => {
+                        ctx.beginPath();
+                        ctx.arc(centerX, centerY, radius * r, 0, Math.PI * 2);
+                        ctx.strokeStyle = ['#6366f1', '#8b5cf6', '#06b6d4'][i];
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    });
+
+                    t += 0.03;
+                    this.animationId = requestAnimationFrame(draw);
+                };
+                draw();
+            },
+
+            drawActiveWaveform() {
+                if (!this.analyser) return;
+
+                const ctx = this.elements.waveform.getContext('2d');
+                const width = this.elements.waveform.width / (window.devicePixelRatio || 1);
+                const height = this.elements.waveform.height / (window.devicePixelRatio || 1);
+                const centerX = width / 2;
+                const centerY = height / 2;
+                const radius = Math.min(width, height) * 0.35;
+                const bufferLength = this.analyser.fftSize;
+                const dataArray = new Uint8Array(bufferLength);
+
+                const draw = () => {
+                    this.analyser.getByteTimeDomainData(dataArray);
+                    ctx.clearRect(0, 0, width, height);
+
+                    const avgAmplitude = dataArray.reduce((sum, val) => sum + Math.abs(val - 128), 0) / bufferLength;
+                    const scale = Math.min(Math.max(avgAmplitude / 30, 0.3), 1.5);
+
+                    ctx.globalAlpha = 0.7;
+                    const points = 120;
+                    const radii = [0.8, 0.6, 0.4];
+                    const colors = ['#6366f1', '#8b5cf6', '#06b6d4'];
+
+                    radii.forEach((baseR, idx) => {
+                        ctx.beginPath();
+                        for (let i = 0; i <= points; i++) {
+                            const angle = (i / points) * Math.PI * 2;
+                            const dataIdx = Math.floor((i / points) * bufferLength);
+                            const v = dataArray[dataIdx] / 128 - 1;
+                            const r = radius * baseR + v * radius * (0.2 - idx * 0.05) * scale;
+                            const x = centerX + Math.cos(angle) * r;
+                            const y = centerY + Math.sin(angle) * r;
+                            i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+                        }
+                        ctx.closePath();
+                        ctx.strokeStyle = colors[idx];
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                    });
+
+                    this.animationId = requestAnimationFrame(draw);
+                };
+                draw();
+            },
+
+            async startRecording() {
+                if (this.isRecording || !navigator.mediaDevices?.getUserMedia) return;
+
+                try {
+                    this.cleanup();
+
+                    const constraints = {
+                        audio: {
+                            deviceId: this.elements.micSelect.value ? { exact: this.elements.micSelect.value } : undefined,
+                            sampleRate: 16000,
+                            channelCount: 1,
+                            echoCancellation: false,
+                            noiseSuppression: false
+                        }
+                    };
+
+                    this.currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+
+                    const workletCode = `
+                        class PCMProcessor extends AudioWorkletProcessor {
+                            constructor() {
+                                super();
+                                this.buffer = [];
+                                this.bufferSize = 1600;
+                            }
+                            process(inputs) {
+                                const input = inputs[0];
+                                if (!input?.[0]?.length) return true;
+                                const channel = input[0];
+                                for (let i = 0; i < channel.length; i++) {
+                                    this.buffer.push(channel[i]);
+                                    if (this.buffer.length >= this.bufferSize) {
+                                        const pcm = new Int16Array(this.buffer.length);
+                                        for (let j = 0; j < this.buffer.length; j++) {
+                                            const s = Math.max(-1, Math.min(1, this.buffer[j]));
+                                            pcm[j] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                                        }
+                                        this.port.postMessage(pcm.buffer, [pcm.buffer]);
+                                        this.buffer = [];
+                                    }
+                                }
+                                return true;
+                            }
+                        }
+                        registerProcessor('pcm-processor', PCMProcessor);
+                    `;
+                    const blob = new Blob([workletCode], { type: 'application/javascript' });
+                    await this.audioContext.audioWorklet.addModule(URL.createObjectURL(blob));
+
+                    const source = this.audioContext.createMediaStreamSource(this.currentStream);
+                    this.workletNode = new AudioWorkletNode(this.audioContext, 'pcm-processor', { numberOfInputs: 1, numberOfOutputs: 1 });
+                    this.analyser = this.audioContext.createAnalyser();
+                    this.analyser.fftSize = 2048;
+
+                    this.workletNode.port.onmessage = (e) => {
+                        if (!this.isRecording || this.ws?.readyState !== WebSocket.OPEN) return;
+                        this.ws.send(e.data);
+                    };
+
+                    source.connect(this.workletNode);
+                    source.connect(this.analyser);
+                    this.workletNode.connect(this.audioContext.destination);
+
+                    this.isRecording = true;
+                    this.elements.recordBtn.classList.add('recording');
+                    this.elements.recordIcon.textContent = '⏹️';
+                    this.setStatus('录音中...', 'recording');
+
+                    cancelAnimationFrame(this.animationId);
+                    this.drawActiveWaveform();
+
+                } catch (err) {
+                    this.setStatus('无法访问麦克风');
+                    console.error(err);
+                }
+            },
+
+            stopRecording() {
+                if (!this.isRecording) return;
+
+                this.isRecording = false;
+                this.elements.recordBtn.classList.remove('recording');
+                this.elements.recordIcon.textContent = '🎤';
+                this.setStatus('处理中...');
+
+                if (this.workletNode) {
+                    this.workletNode.disconnect();
+                    this.workletNode = null;
+                }
+
+                if (this.analyser) {
+                    this.analyser.disconnect();
+                    this.analyser = null;
+                }
+
+                if (this.currentStream) {
+                    this.currentStream.getTracks().forEach(track => track.stop());
+                    this.currentStream = null;
+                }
+
+                if (this.audioContext?.state !== 'closed') {
+                    this.audioContext.close();
+                    this.audioContext = null;
+                }
+
+                cancelAnimationFrame(this.animationId);
+                this.drawIdleWaveform();
+            },
+
+            cleanup() {
+                if (this.isRecording) this.stopRecording();
+                cancelAnimationFrame(this.animationId);
+                if (this.currentStream) {
+                    this.currentStream.getTracks().forEach(track => track.stop());
+                }
+                if (this.audioContext) {
+                    this.audioContext.close();
+                }
             }
-        }
+        };
 
-        function stopRecording() {
-            if (!isRecording) return;
-
-            // Stop the custom PCM recorder
-            if (mediaRecorder && typeof mediaRecorder.stop === 'function') {
-                mediaRecorder.stop();
-            }
-
-            // Disconnect and clean up audio nodes
-            if (sourceNode) {
-                sourceNode.disconnect();
-                sourceNode = null;
-            }
-            if (analyser) {
-                analyser.disconnect();
-                analyser = null;
-            }
-
-            // Stop all tracks in the current stream
-            if (currentStream) {
-                currentStream.getTracks().forEach(track => track.stop());
-                currentStream = null;
-            }
-
-            // Update state
-            isRecording = false;
-            recordBtn.classList.remove('recording');
-            setStatus('录音已停止，等待回复...');
-
-            cancelAnimationFrame(animationId);
-            drawIdleWaveform();
-        }
-
-        recordBtn.addEventListener('click', () => {
-            if (isRecording) {
-                stopRecording();
-            } else {
-                startRecording();
-            }
-        });
-
-        // ========================
-        // Init
-        // ========================
-        drawIdleWaveform(); // Start the idle waveform
-        connectWS();
-
-        // Prevent scroll during recording on mobile
-        document.body.addEventListener('touchmove', e => {
-            if (isRecording) e.preventDefault();
-        }, { passive: false });
-
-        // Clean up resources when page is unloaded
-        window.addEventListener('beforeunload', () => {
-            if (isRecording) {
-                stopRecording();
-            }
-            if (currentStream) {
-                currentStream.getTracks().forEach(track => track.stop());
-            }
-            if (audioContext) {
-                audioContext.close();
-            }
-            // Cancel any ongoing animations
-            cancelAnimationFrame(animationId);
-        });
+        App.init();
     </script>
 </body>
 </html>
