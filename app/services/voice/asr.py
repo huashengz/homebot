@@ -61,7 +61,7 @@ class DashscopeASR:
             callback=self.callback)
         self.started = False
 
-    def start(self):
+    async def start(self):
         if not self.started:
             logger.info("Starting ASR recognition...")
             self.recognition.start()
@@ -72,7 +72,7 @@ class DashscopeASR:
 
     async def recognize(self, audio_bytes: bytes, is_final: bool = False):
         if not self.started:
-            self.start()
+            await self.start()
         self.recognition.send_audio_frame(audio_bytes)
         if is_final:
             await self.stop()
@@ -84,7 +84,7 @@ class DashscopeASR:
             self.recognition.stop()
             self.started = False
 
-    async def texts(self, timeout: float = 3.0) -> AsyncGenerator[str, None]:
+    async def texts(self, timeout: float = 2.0) -> AsyncGenerator[str, None]:
         last_received = None
         while True:
             try:

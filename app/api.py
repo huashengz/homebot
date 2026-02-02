@@ -1,4 +1,5 @@
 import logging
+import traceback
 import asyncio
 from fastapi import APIRouter, WebSocket
 from app.services.chain import SpeechChain, SpeechStep
@@ -57,9 +58,9 @@ async def speech(websocket: WebSocket):
                         pass
                 chain = SpeechChain()
                 message_task, output_task = _make_tasks(websocket, chain)
-            if chain.step == SpeechStep.ASR:
-                await chain.input([data])
+            await chain.input([data])
     except Exception as e:
+        traceback.print_exc()
         logger.info(f"WebSocket stream ended: {e}")
     finally:
         if message_task:

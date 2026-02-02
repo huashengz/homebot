@@ -576,24 +576,83 @@
                             constructor() {
                                 super();
                                 this.buffer = [];
-                                this.bufferSize = 1600;
+                                this.vadBuffer = [];
+                                this.bufferSize = 1600; // 100ms of audio at 16kHz (1600 samples for 3200 bytes)
+                                this.rmsThreshold = 0.01; // Adjustable threshold for VAD
+                                this.silenceDuration = 0; // Track silence duration in ms
+                                this.minSilenceDuration = 500; // Minimum silence before stopping transmission
+                                this.isSpeechDetected = false;
+                                this.silenceTimer = 0;
                             }
+
+                            calculateRMS(audioData) {
+                                let sum = 0;
+                                for (let i = 0; i < audioData.length; i++) {
+                                    sum += audioData[i] * audioData[i];
+                                }
+                                const rms = Math.sqrt(sum / audioData.length);
+                                return rms;
+                            }
+
                             process(inputs) {
                                 const input = inputs[0];
                                 if (!input?.[0]?.length) return true;
+
                                 const channel = input[0];
+
+                                // Add samples to both buffers
                                 for (let i = 0; i < channel.length; i++) {
                                     this.buffer.push(channel[i]);
-                                    if (this.buffer.length >= this.bufferSize) {
-                                        const pcm = new Int16Array(this.buffer.length);
-                                        for (let j = 0; j < this.buffer.length; j++) {
-                                            const s = Math.max(-1, Math.min(1, this.buffer[j]));
+                                    this.vadBuffer.push(channel[i]);
+                                }
+
+                                // Process VAD when we have enough samples (for 10ms chunks)
+                                if (this.vadBuffer.length >= 160) { // 10ms at 16kHz
+                                    const vadChunk = this.vadBuffer.slice(0, 160);
+                                    this.vadBuffer = this.vadBuffer.slice(160);
+
+                                    const rms = this.calculateRMS(vadChunk);
+                                    const isSpeech = rms > this.rmsThreshold;
+
+                                    if (isSpeech) {
+                                        // Speech detected - reset silence timer and enable transmission
+                                        this.silenceTimer = 0;
+                                        this.isSpeechDetected = true;
+                                    } else if (this.isSpeechDetected) {
+                                        // Previously detected speech, now in silence - increment timer
+                                        this.silenceTimer += 10; // 10ms increment
+
+                                        if (this.silenceTimer >= this.minSilenceDuration) {
+                                            // Sufficient silence detected - stop speech detection
+                                            this.isSpeechDetected = false;
+                                        }
+                                    }
+
+                                    // Send data if speech is currently detected and we have enough samples
+                                    if (this.isSpeechDetected && this.buffer.length >= this.bufferSize) {
+                                        // Take exactly bufferSize samples (1600 samples = 3200 bytes)
+                                        const samplesToSend = this.buffer.splice(0, this.bufferSize);
+                                        const pcm = new Int16Array(this.bufferSize); // Exactly 1600 samples
+                                        for (let j = 0; j < this.bufferSize; j++) {
+                                            const s = Math.max(-1, Math.min(1, samplesToSend[j]));
                                             pcm[j] = s < 0 ? s * 0x8000 : s * 0x7FFF;
                                         }
-                                        this.port.postMessage(pcm.buffer, [pcm.buffer]);
-                                        this.buffer = [];
+                                        this.port.postMessage({
+                                            data: pcm.buffer,
+                                            isSpeech: true
+                                        }, [pcm.buffer]);
+                                    }
+
+                                    // Signal VAD status to main thread periodically
+                                    if (this.vadBuffer.length === 0) {
+                                        this.port.postMessage({
+                                            type: 'vad_status',
+                                            isSpeech: this.isSpeechDetected,
+                                            rms: rms
+                                        });
                                     }
                                 }
+
                                 return true;
                             }
                         }
@@ -609,7 +668,19 @@
 
                     this.workletNode.port.onmessage = (e) => {
                         if (!this.isRecording || this.ws?.readyState !== WebSocket.OPEN) return;
-                        this.ws.send(e.data);
+
+                        // Handle VAD status updates
+                        if (e.data.type === 'vad_status') {
+                            // Update UI based on VAD status if needed
+                            if (e.data.isSpeech) {
+                                this.elements.recordBtn.style.boxShadow = '0 0 0 4px rgba(16, 185, 129, 0.5)';
+                            } else {
+                                this.elements.recordBtn.style.boxShadow = '';
+                            }
+                        } else if (e.data.isSpeech) {
+                            // Only send audio data if speech was detected
+                            this.ws.send(e.data.data);
+                        }
                     };
 
                     source.connect(this.workletNode);
@@ -619,7 +690,7 @@
                     this.isRecording = true;
                     this.elements.recordBtn.classList.add('recording');
                     this.elements.recordIcon.textContent = '⏹️';
-                    this.setStatus('录音中...', 'recording');
+                    this.setStatus('录音中... (VAD)', 'recording');
 
                     cancelAnimationFrame(this.animationId);
                     this.drawActiveWaveform();
@@ -636,6 +707,7 @@
                 this.isRecording = false;
                 this.elements.recordBtn.classList.remove('recording');
                 this.elements.recordIcon.textContent = '🎤';
+                this.elements.recordBtn.style.boxShadow = ''; // Remove VAD indicator
                 this.setStatus('处理中...');
 
                 if (this.workletNode) {
