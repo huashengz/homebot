@@ -59,7 +59,7 @@ class WebSocketClient(BaseClient):
     
 class LocalClient(BaseClient):
 
-    def __init__(self, rms_threshold: int = 200, enable_wakeword: bool = False):
+    def __init__(self, rms_threshold: int = 300, enable_wakeword: bool = False):
         super().__init__()
         # RMS threshold for audio (16-bit PCM). Frames with RMS below
         # this value will be filtered out in `input()`.
@@ -117,12 +117,13 @@ class LocalClient(BaseClient):
                     logger.info(f"rms - {rms}")
                     self.last_active_time = time.time()
                     yield data
-                elif time.time() - self.last_active_time > 10:
+                else:
+                    # yield data
+                    await asyncio.sleep(0.05)
+                if time.time() - self.last_active_time > 10:
                     logger.info("no speech detected, break")
                     break
-                else:
-                    await asyncio.sleep(0.05)
-                    continue
+
 
     async def output(self, message: Message):
         if message.data.text_chunk:

@@ -62,18 +62,24 @@ class DashscopeSTT:
         self.started = False
 
     async def start(self):
+        logger.info("Starting ASR recognition...")
+        self.recognition.start()
+        self.started = True
+        logger.info("ASR recognition started")
+
+    async def ensure_started(self):
         if not self.started:
-            logger.info("Starting ASR recognition...")
-            self.recognition.start()
-            self.started = True
-            logger.info("ASR recognition started")
+            await self.start()
 
     async def stop(self):
         if self.started:
-            logger.info("Stopping ASR recognition...")
-            self.recognition.stop()
+            logger.info("Stopping DashScope recognition...")
+            try:
+                self.recognition.stop()
+            except Exception as e:
+                logger.warning(f"Error: {e}")
             self.started = False
-            logger.info("ASR recognition stopped")
+            logger.info("DashScope recognition stopped")
 
     async def recognize(self, audio_bytes: bytes, is_final: bool = False):
         if not self.started:
@@ -81,6 +87,7 @@ class DashscopeSTT:
         try:
             self.recognition.send_audio_frame(audio_bytes)
         except Exception as e:
+            await self.stop()
             raise e
         if is_final:
             await self.stop()

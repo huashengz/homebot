@@ -40,10 +40,8 @@ class BotState:
                 text, is_final = result
                 logger.info(f"collect text: {text}")
             except asyncio.QueueEmpty:
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.05)
                 continue
-            except Exception as e:
-                raise e
             text_payload = Payload(role=Role.USER, text_chunk=text, is_final=is_final)
             self.latest_received_texts.append(text_payload)
 
@@ -65,10 +63,12 @@ class BotState:
                 wait_seconds = time.time() - last_payload.dttm
                 if (last_payload.is_final and wait_seconds > 1) or wait_seconds > 3:
                     full_text = "".join([p.text_chunk for p in self.latest_received_texts])
+                    logger.info(f"Stream Query: {full_text}")
                     self.latest_received_texts.clear()
                     if full_text:
                         yield full_text
             else:
+                logger.info(f"Stream Query: beat")
                 await asyncio.sleep(0.05)
 
 
@@ -93,9 +93,6 @@ class BotChain:
     async def start(self):
         logger.info("Starting BotChain...")
         await self.client.connect()
-        await self.stt.start()
-        await self.tts.start()
-        await self.llm.start()
         self.step = Step.ASR
 
         receive_task = asyncio.create_task(self.process_audio_receive())
@@ -129,6 +126,7 @@ class BotChain:
         try:
             logger.info("Starting to receive audio data from client")
             async for data in self.client.input():
+                await self.stt.ensure_started()
                 if self.step == Step.ASR:
                     await self.stt.recognize(data, is_final=False)
                     await asyncio.sleep(0.005)
