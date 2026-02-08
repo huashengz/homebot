@@ -1,69 +1,175 @@
-import logging
 import enum
+import time
+import logging
 import asyncio
-from typing import AsyncGenerator
+from collections.abc import Coroutine
+from typing import AsyncGenerator, List
+from contextlib import suppress
+
 from app.services.chat.llm import OpenAILLM
-from app.services.voice.asr import DashscopeASR
+from app.services.voice.stt import DashscopeSTT
 from app.services.voice.tts import DashscopeTTS
-from app.schemas import SentenceComplete, TextContent
-from app.log import get_logger
+from app.schemas import Step, Role, Payload, Message
+from app.services.callback import ChainCallback
+from app.client import BaseClient
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
-class SpeechStep(enum.Enum):
-    ASR = "asr"
-    LLM = "llm"
-    TTS = "tts"
 
-class SpeechChain():
-    def __init__(self):
-        self.asr = DashscopeASR()
-        self.tts = DashscopeTTS()
-        self.llm = OpenAILLM()
-        self.step = SpeechStep.ASR
-        self.message_queue: asyncio.Queue = asyncio.Queue()
+class BotState:
+    """收集 ASR 结果并定期发送给 LLM 进行处理"""
 
-    def _put_message(self, msg):
-        try:
-            self.message_queue.put_nowait(msg)
-        except asyncio.QueueFull:
-            pass
+    def __init__(self, callback: ChainCallback):
+        self.callback = callback
+        self.latest_received_texts: List[Payload] = []
+        self.latest_received_audios: List[Payload] = []
 
-    async def process(self):
-        request_text_chunks = []
-        async for text in self.asr.texts(timeout=2.0):
-            if not request_text_chunks:
-                self._put_message(SentenceComplete())
-            logger.info(f"Recognized text chunk: {text}")
-            request_text_chunks.append(text)
-        transcript = ''.join(request_text_chunks)
-        logger.info(f"Final transcript: {transcript}")
+    async def collect(self):
+        stt_task = asyncio.create_task(self.collect_stt_texts())
+        tts_task = asyncio.create_task(self.collect_tts_audios())
+        await asyncio.gather(stt_task, tts_task)
 
-        await self.asr.stop()
+    async def clear(self):
+        self.latest_received_texts.clear()
+        self.latest_received_audios.clear()
 
-        self.step = SpeechStep.LLM
-        reply_chunks = []
-        async for text in self.llm.agenerate(prompt=transcript):
-            reply_chunks.append(text)
-            await self.tts.synthesize(text=text, is_final=False)
-        full_reply = ''.join(reply_chunks)
-        if full_reply:
-            self._put_message(TextContent(content=full_reply))
-        await self.tts.synthesize(text="", is_final=True)
-        self.step = SpeechStep.TTS
-
-    async def input(self, audio_stream) -> None:
-        """处理输入音频流"""
-        await self.asr.start()
-        for audio_chunk in audio_stream:
-            if self.step != SpeechStep.ASR:
+    async def collect_stt_texts(self):
+        while True:
+            try:
+                result = self.callback.text_queue.get_nowait()
+                text, is_final = result
+                logger.info(f"collect text: {text}")
+            except asyncio.QueueEmpty:
                 await asyncio.sleep(0.1)
                 continue
-            logger.info(f"Processing audio chunk of size: {len(audio_chunk)} bytes")
-            await self.asr.recognize(audio_chunk)
+            except Exception as e:
+                raise e
+            text_payload = Payload(role=Role.USER, text_chunk=text, is_final=is_final)
+            self.latest_received_texts.append(text_payload)
 
-    async def output(self) -> AsyncGenerator[bytes, None]:
-        asyncio.create_task(self.process())
-        async for chunk in self.tts.chunks():
-            yield chunk
-        self.step = SpeechStep.ASR
+    async def collect_tts_audios(self):
+        while True:
+            try:
+                audio_bytes, is_final = self.callback.audio_queue.get_nowait()
+            except asyncio.QueueEmpty:
+                await asyncio.sleep(0.1)
+                continue
+            audio_payload = Payload(role=Role.ASSISTANT, audio_chunk=audio_bytes, is_final=is_final)
+            self.latest_received_audios.append(audio_payload)
+
+    async def stream_query(self) -> AsyncGenerator[str, None]:
+        while True:
+            full_text = ""
+            if len(self.latest_received_texts) > 0:
+                last_payload = self.latest_received_texts[-1]
+                wait_seconds = time.time() - last_payload.dttm
+                if (last_payload.is_final and wait_seconds > 1) or wait_seconds > 3:
+                    full_text = "".join([p.text_chunk for p in self.latest_received_texts])
+                    self.latest_received_texts.clear()
+                    if full_text:
+                        yield full_text
+            else:
+                await asyncio.sleep(0.05)
+
+
+class BotChain:
+    """STT -> LLM -> TTS"""
+
+    def __init__(self, client: BaseClient):
+        self.step: Step = Step.STARTED
+        self.client = client
+
+        self.text_queue: asyncio.Queue[tuple[str, bool]] = asyncio.Queue(maxsize=1000)
+        self.audio_queue: asyncio.Queue[tuple[bytes, bool]] = asyncio.Queue(maxsize=1000)
+
+        self.callback = ChainCallback(self.text_queue, self.audio_queue)
+
+        self.stt = DashscopeSTT(self.callback)
+        self.tts = DashscopeTTS(self.callback)
+        self.llm = OpenAILLM(self.callback)
+        self.state: BotState = BotState(self.callback)
+        self.tasks: List[asyncio.tasks.Task] = []
+
+    async def start(self):
+        logger.info("Starting BotChain...")
+        await self.client.connect()
+        await self.stt.start()
+        await self.tts.start()
+        await self.llm.start()
+        self.step = Step.ASR
+
+        receive_task = asyncio.create_task(self.process_audio_receive())
+        generate_task = asyncio.create_task(self.process_llm_generate())
+        state_task = asyncio.create_task(self.state.collect())
+        
+        self.tasks.append(receive_task)
+        self.tasks.append(generate_task)
+        self.tasks.append(state_task)
+        try:
+            await asyncio.wait(self.tasks)
+        except asyncio.CancelledError:
+            logger.info("Cancelling BotChain...")
+            for task in self.tasks:
+                if not task.done():
+                    task.cancel()
+            await asyncio.gather(*self.tasks, return_exceptions=True)
+        finally:
+            await self.stop()
+
+    async def stop(self):
+        logger.info("Stopping BotChain...")
+        await self.client.close()
+        await self.state.clear()
+        await self.stt.stop()
+        await self.tts.stop()
+        await self.llm.stop()
+        self.tasks.clear()
+
+    async def process_audio_receive(self):
+        try:
+            logger.info("Starting to receive audio data from client")
+            async for data in self.client.input():
+                if self.step == Step.ASR:
+                    await self.stt.recognize(data, is_final=False)
+                    await asyncio.sleep(0.005)
+                else:
+                    await asyncio.sleep(0.05)
+                    continue
+        except Exception as e:
+            logger.error(f"Error receiving audio data: {e}")
+        logger.info("Stopped receiving audio data from client")
+
+    async def process_llm_generate(self):
+        logger.info("Starting LLM generation process")
+        try:
+            async for query in self.state.stream_query():
+                logger.info(f"User Query: {query}")
+                await self.stt.stop()
+                # await self.state.clear()
+                self.step = Step.LLM
+                async for text_chunk in self.llm.agenerate(query):
+                    message = Message(
+                        cmd=Step.LLM, 
+                        data=Payload(
+                            role=Role.ASSISTANT, 
+                            text_chunk=text_chunk, 
+                            is_final=False))
+                    await self.client.output(message)
+                self.step = Step.ASR
+        except Exception as e:
+            logger.error(f"Error in speech chain: {e}")
+        finally:
+            await self.stop()
+        logger.info("LLM generation process ended")
+
+    async def process_text_synthesize(self):
+        pass
+
+    async def run_forever(self):
+        try:
+            await self.start()
+        except Exception as e:
+            logger.error(f"Error in speech chain: {e}")
+        finally:
+            await self.stop()
+

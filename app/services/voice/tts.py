@@ -11,6 +11,7 @@ from typing import Optional, Dict, Any, AsyncGenerator
 
 import dashscope
 from dashscope.audio.tts_v2 import SpeechSynthesizer, ResultCallback
+from app.services.callback import ChainCallback
 from app.config.settings import settings
 from app.log import get_logger
 
@@ -18,40 +19,37 @@ logger = get_logger(__name__)
 
 dashscope.api_key = settings.ALIYUN_ACCESS_KEY
 
-class Callback(ResultCallback):
+class CallbackWrapper(ResultCallback):
 
-    def __init__(self, tts: 'DashscopeTTS'):
-        self.tts = tts
+    def __init__(self, callback: ChainCallback):
+        self.callback = callback
 
     def on_data(self, data: bytes):
         if data:
-            self.tts.put_nowait(data)
+            self.callback.on_audio(data, is_final=False)
 
     def on_complete(self):
         logger.info("TTS synthesis complete")
-        self.tts.put_nowait(None)
+        self.callback.on_audio(b"", is_final=True)
+        self.callback.on_audio_complete()
 
 class DashscopeTTS:
     """阿里云 Dashscope 文本转语音"""
 
-    def __init__(self):
+    def __init__(self, callback: ChainCallback):
         self.model = "cosyvoice-v3-flash"
         self.voice = "longanhuan"
-        self.queue = asyncio.Queue(1000)
-        self.callback = Callback(self)
+        self.callbackwrap = CallbackWrapper(callback)
         self.synthesizer = SpeechSynthesizer(
             model=self.model,
             voice=self.voice,
-            callback=self.callback)
+            callback=self.callbackwrap)
 
-    def start(self):
+    async def start(self):
         pass
 
     async def stop(self):
         self.synthesizer.async_streaming_complete()
-
-    def put_nowait(self, data: bytes):
-        self.queue.put_nowait(data)
 
     async def synthesize(self, text: str, is_final: bool = False):
         try:
@@ -61,15 +59,3 @@ class DashscopeTTS:
                 await self.stop()
         except Exception as e:
             logger.error(f"Dashscope TTS error: {e}")
-
-    async def chunks(self) -> AsyncGenerator[bytes, None]:
-        while True:
-            try:
-                chunk = self.queue.get_nowait()
-            except asyncio.QueueEmpty:
-                await asyncio.sleep(0.1)
-                continue
-            if chunk is None:
-                logger.info("Received TTS end signal")
-                break
-            yield chunk

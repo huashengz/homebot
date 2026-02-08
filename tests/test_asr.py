@@ -5,12 +5,12 @@ import asyncio
 import pyaudio
 import time
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from app.services.voice.asr import DashscopeASR
+from app.services.voice.asr import DashscopeSTT
 
 logging.basicConfig(level=logging.INFO)
-asr = DashscopeASR()
+asr = DashscopeSTT()
 
-async def print_texts(asr: DashscopeASR):
+async def print_texts(asr: DashscopeSTT):
     print("Starting to print recognized texts...")
     async for text in asr.texts():
         if text is None:

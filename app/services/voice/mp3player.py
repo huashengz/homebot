@@ -46,7 +46,8 @@ class RealtimeMp3Player:
         try:
             self.ffmpeg_process.stdin.close()
             self.ffmpeg_process.wait()
-            self.play_thread.join()
+            if self.play_thread:
+                self.play_thread.join()
             self._stream.stop_stream()
             self._stream.close()
             self._player.terminate()

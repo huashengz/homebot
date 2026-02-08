@@ -9,11 +9,18 @@ logger = get_logger(__name__)
 class OpenAILLM:
     """阿里云 Dashscope LLM 服务"""
 
-    def __init__(self):
+    def __init__(self, callback):
+        self.callback = callback
         self.client = OpenAI(
             base_url=settings.OPENAI_BASE_URL,
             api_key=settings.OPENAI_API_KEY)
         self.history = []
+
+    async def start(self):
+        pass
+
+    async def stop(self):
+        pass
 
     def get_system_message(self) -> dict:
         system_prompt = """
