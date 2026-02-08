@@ -27,7 +27,7 @@ async def speech(websocket: WebSocket):
     await chain.start()
     await chain.process()
     try:
-        async for data in client.input():
+        async for data in client.stt_input():
             pass
     except Exception as e:
         traceback.print_exc()

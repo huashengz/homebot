@@ -7,6 +7,7 @@ import time
 import signal
 import logging
 import asyncio
+import threading
 from typing import List, AsyncGenerator
 
 import dashscope
@@ -42,7 +43,8 @@ class ASRCallbackWrapper(RecognitionCallback):
         is_final = sentence['sentence_end']
         text = sentence['text']
         logger.info(f"STT: {text}, {is_final}")
-        self.callback.on_text(text, is_final=is_final)
+        if is_final:
+            self.callback.on_text(text, is_final=is_final)
 
 
 class DashscopeSTT:
@@ -80,14 +82,14 @@ class DashscopeSTT:
                 logger.warning(f"Error: {e}")
             self.started = False
             logger.info("DashScope recognition stopped")
-
     async def recognize(self, audio_bytes: bytes, is_final: bool = False):
         if not self.started:
             await self.start()
         try:
+            logger.info(f"Recognize: {len(audio_bytes)}")
             self.recognition.send_audio_frame(audio_bytes)
         except Exception as e:
+            logger.warning(f"Error occupied")
             await self.stop()
-            raise e
         if is_final:
             await self.stop()

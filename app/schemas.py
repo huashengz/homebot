@@ -30,5 +30,15 @@ class Payload(BaseModel):
 
     
 class Message(BaseModel):
-    cmd: Step
+    step: Step
     data: Optional[Payload] = None
+
+
+class CMD(str, Enum):
+    ON = "turn_on"
+    OFF = "turn_off"
+
+   
+class DeviceEvent(BaseModel):
+    cmd: CMD
+    message: str

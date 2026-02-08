@@ -18,10 +18,13 @@ logger = logging.getLogger(__name__)
 
 class BaseClient:
 
-    async def input(self) -> AsyncGenerator[bytes, None]:
+    async def stt_input(self) -> AsyncGenerator[bytes, None]:
         raise NotImplementedError
 
-    async def output(self, message: Message):
+    async def tts_input(self) -> AsyncGenerator[str, None]:
+        raise NotImplementedError
+
+    async def llm_output(self, message: Message):
         raise NotImplementedError
 
     async def heartbeat(self):
@@ -39,12 +42,12 @@ class WebSocketClient(BaseClient):
     def __init__(self, websocket: WebSocket):
         self.websocket = websocket
 
-    async def input(self) -> AsyncGenerator[bytes, None]:
+    async def stt_input(self) -> AsyncGenerator[bytes, None]:
         while True:
             data = await self.websocket.receive_bytes()
             yield data
 
-    async def output(self, message: Message):
+    async def llm_output(self, message: Message):
         await self.websocket.send_json(message.model_dump())
 
     async def heartbeat(self):
@@ -69,6 +72,7 @@ class LocalClient(BaseClient):
             format=pyaudio.paInt16,
             channels=1,
             rate=16000,
+            # frames_per_buffer=3200,
             input=True)
         self.porcupine = pvporcupine.create(
             access_key=settings.PICOVOICE_ACCESS_KEY,
@@ -95,7 +99,7 @@ class LocalClient(BaseClient):
                 self.last_active_time = time.time()
                 break  
             else:
-                await asyncio.sleep(0.01)
+                await asyncio.sleep(0.05)
 
     async def keyboard_enter(self):
         logger.info("Enter Any Key...")
@@ -104,28 +108,34 @@ class LocalClient(BaseClient):
             self.last_active_time = time.time()
             break
 
-    async def input(self) -> AsyncGenerator[bytes, None]:
+    async def stt_input(self) -> AsyncGenerator[bytes, None]:
         while True:
             await self.detect()
             while True:
                 data = self.stream.read(3200, exception_on_overflow=False)
-                try:
-                    rms = audioop.rms(data, 2)
-                except Exception:
-                    rms = 0
+                # idata = numpy.frombuffer(data, dtype=numpy.int16)
+                # fdata = idata.astype(numpy.float32) / 32768.0
+                # rms = numpy.sqrt(numpy.mean(fdata ** 2))
+
+                # rms = audioop.rms(data, 2)
+                rms = 500
+
                 if rms > self.rms_threshold:
                     logger.info(f"rms - {rms}")
                     self.last_active_time = time.time()
                     yield data
-                else:
-                    # yield data
                     await asyncio.sleep(0.05)
+                else:
+                    await asyncio.sleep(0.05)
+
+                if time.time() - self.last_active_time > 1:
+                    await asyncio.sleep(0.1)
+                    
                 if time.time() - self.last_active_time > 10:
                     logger.info("no speech detected, break")
                     break
 
-
-    async def output(self, message: Message):
+    async def llm_output(self, message: Message):
         if message.data.text_chunk:
             print(f"{message.data.text_chunk}", end="", flush=True)
             self.last_active_time = time.time()

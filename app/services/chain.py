@@ -9,7 +9,7 @@ from contextlib import suppress
 from app.services.chat.llm import OpenAILLM
 from app.services.voice.stt import DashscopeSTT
 from app.services.voice.tts import DashscopeTTS
-from app.schemas import Step, Role, Payload, Message
+from app.schemas import Step, Role, Payload, Message, CMD, DeviceEvent
 from app.services.callback import ChainCallback
 from app.client import BaseClient
 
@@ -61,15 +61,17 @@ class BotState:
             if len(self.latest_received_texts) > 0:
                 last_payload = self.latest_received_texts[-1]
                 wait_seconds = time.time() - last_payload.dttm
-                if (last_payload.is_final and wait_seconds > 1) or wait_seconds > 3:
+                if (last_payload.is_final and wait_seconds > 1) or wait_seconds > 10:
                     full_text = "".join([p.text_chunk for p in self.latest_received_texts])
                     logger.info(f"Stream Query: {full_text}")
                     self.latest_received_texts.clear()
                     if full_text:
                         yield full_text
             else:
-                logger.info(f"Stream Query: beat")
                 await asyncio.sleep(0.05)
+
+    async def on_device_event(self, event: DeviceEvent):
+        pass
 
 
 class BotChain:
@@ -125,11 +127,10 @@ class BotChain:
     async def process_audio_receive(self):
         try:
             logger.info("Starting to receive audio data from client")
-            async for data in self.client.input():
+            async for data in self.client.stt_input():
                 await self.stt.ensure_started()
                 if self.step == Step.ASR:
                     await self.stt.recognize(data, is_final=False)
-                    await asyncio.sleep(0.005)
                 else:
                     await asyncio.sleep(0.05)
                     continue
@@ -145,14 +146,16 @@ class BotChain:
                 await self.stt.stop()
                 # await self.state.clear()
                 self.step = Step.LLM
+                full_text = ""
                 async for text_chunk in self.llm.agenerate(query):
+                    full_text += text_chunk
                     message = Message(
-                        cmd=Step.LLM, 
+                        step=Step.LLM, 
                         data=Payload(
                             role=Role.ASSISTANT, 
                             text_chunk=text_chunk, 
                             is_final=False))
-                    await self.client.output(message)
+                    await self.client.llm_output(message)
                 self.step = Step.ASR
         except Exception as e:
             logger.error(f"Error in speech chain: {e}")

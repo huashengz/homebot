@@ -1,3 +1,5 @@
+import os
+import jinja2
 import logging
 from typing import AsyncGenerator
 from openai import OpenAI
@@ -5,6 +7,7 @@ from app.config import settings
 from app.log import get_logger
 
 logger = get_logger(__name__)
+current_dir = os.path.dirname(__file__)
 
 class OpenAILLM:
     """阿里云 Dashscope LLM 服务"""
@@ -22,18 +25,17 @@ class OpenAILLM:
     async def stop(self):
         pass
 
-    def get_system_message(self) -> dict:
-        system_prompt = """
-            你是一个有帮助的助手。请用中文回答用户的问题。回答必须非常简洁。因为我们是在一个语音对话场景中。
-        """
-        return {"role": "system", "content": system_prompt}
+    async def load_prompt(self, q: str):
+        prompt_file = os.path.join(current_dir, 'prompt.jinja')
+        temp: jinja2.Template = jinja2.Template(open(prompt_file, 'r').read())
+        return temp.render(q=q)
 
-    async def agenerate(self, prompt: str, model: str = None) -> AsyncGenerator[str, None]:
+    async def agenerate(self, q: str, model: str = None) -> AsyncGenerator[str, None]:
         model = model or settings.OPENAI_MODEL
         answer = ""
         try:
-            user_message = {"role": "user", "content": prompt}
-            messages = [self.get_system_message()] + self.history[-5:] + [user_message]
+            user_message = {"role": "user", "content": await self.load_prompt(q)}
+            messages = [user_message]
             response = self.client.chat.completions.create(
                 model=model,
                 messages=messages,
@@ -45,8 +47,8 @@ class OpenAILLM:
                     continue
                 answer += content
                 yield content
-            self.history.append({"role": "user", "content": prompt})
-            self.history.append({"role": "assistant", "content": answer})
+            # self.history.append({"role": "user", "content": prompt})
+            # self.history.append({"role": "assistant", "content": answer})
         except Exception as e:
             logger.error(f"LLM error: {e}")
             raise e
