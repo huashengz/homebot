@@ -1,68 +1,39 @@
+#!/usr/bin/env python3
+"""
+Console client for AnyBot
+
+This script provides a command-line interface to interact with the AnyBot server.
+It allows users to send text messages and receive responses from the AI chatbot.
+"""
+
+import argparse
+import asyncio
 import sys
 import time
 import logging
-import asyncio
 import numpy
 import pyaudio
 import pvporcupine
 import audioop
 from fastapi import WebSocket
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Optional
+
 from app.services.voice.mp3player import RealtimeMp3Player
 from app.config.settings import settings
-
 from app.schemas import Message
+from app.services.chain import BotChain
+from app.client.base import BaseClient
 
+
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+parser = argparse.ArgumentParser(description="Local client for AnyBot")
+parser.add_argument("--speech")
 
-class BaseClient:
-
-    async def stt_input(self) -> AsyncGenerator[bytes, None]:
-        raise NotImplementedError
-
-    async def tts_input(self) -> AsyncGenerator[str, None]:
-        raise NotImplementedError
-
-    async def llm_output(self, message: Message):
-        raise NotImplementedError
-
-    async def heartbeat(self):
-        raise NotImplementedError
-
-    async def connect(self):
-        raise NotImplementedError
-    
-    async def close(self):
-        raise NotImplementedError
-
-        
-class WebSocketClient(BaseClient):
-
-    def __init__(self, websocket: WebSocket):
-        self.websocket = websocket
-
-    async def stt_input(self) -> AsyncGenerator[bytes, None]:
-        while True:
-            data = await self.websocket.receive_bytes()
-            yield data
-
-    async def llm_output(self, message: Message):
-        await self.websocket.send_json(message.model_dump())
-
-    async def heartbeat(self):
-        pass
-
-    async def connect(self):
-        await self.websocket.accept()
-
-    async def close(self):
-        await self.websocket.close()
-
-    
 class LocalClient(BaseClient):
 
-    def __init__(self, rms_threshold: int = 300, enable_wakeword: bool = False):
+    def __init__(self, rms_threshold: int = 300):
         super().__init__()
         # RMS threshold for audio (16-bit PCM). Frames with RMS below
         # this value will be filtered out in `input()`.
@@ -80,34 +51,38 @@ class LocalClient(BaseClient):
             model_path=settings.PICOVOICE_ZH_MODEL)
         self.player = RealtimeMp3Player()
         self.last_active_time = time.time()
-        self.enable_wakeword = enable_wakeword
 
     async def detect(self):
-        if self.enable_wakeword:
-            await self.wakeword_listen()
-        else:
-            await self.keyboard_enter()
-
-    async def wakeword_listen(self):
-        logger.info("Listening for wake word...")
-        while True:
-            pcm = self.stream.read(self.porcupine.frame_length, exception_on_overflow=False)
-            pcm = numpy.frombuffer(pcm, dtype=numpy.int16)
-            keyword_index = self.porcupine.process(pcm)
-            if keyword_index >= 0:
-                logger.info("Wake word detected!")
-                self.last_active_time = time.time()
-                break  
-            else:
-                await asyncio.sleep(0.05)
-
-    async def keyboard_enter(self):
-        logger.info("Enter Any Key...")
-        while True:
+        logger.info("Listening for wake word... (Press Enter to start recording)")
+        # Create a task to listen for keyboard input
+        async def listen_for_enter():
             input()
-            self.last_active_time = time.time()
-            break
-
+            return True
+        
+        enter_task = asyncio.create_task(listen_for_enter())
+        
+        try:
+            while True:
+                # Check if Enter was pressed
+                if enter_task.done():
+                    logger.info("Enter key pressed!")
+                    self.last_active_time = time.time()
+                    break
+                
+                # Listen for wake word
+                pcm = self.stream.read(self.porcupine.frame_length, exception_on_overflow=False)
+                pcm = numpy.frombuffer(pcm, dtype=numpy.int16)
+                keyword_index = self.porcupine.process(pcm)
+                if keyword_index >= 0:
+                    logger.info("Wake word detected!")
+                    self.last_active_time = time.time()
+                    break  
+                else:
+                    await asyncio.sleep(0.05)
+        finally:
+            # Cancel the enter task if it's still running
+            if not enter_task.done():
+                enter_task.cancel()
     async def stt_input(self) -> AsyncGenerator[bytes, None]:
         while True:
             await self.detect()
@@ -148,18 +123,40 @@ class LocalClient(BaseClient):
     async def heartbeat(self):
         pass
 
-    async def connect(self):
+    async def start(self):
         self.player.start()
 
-    async def close(self):
+    async def stop(self):
         self.stream.stop_stream()
         self.stream.close()
         self.mic.terminate()
         self.player.stop()
 
-    
 
-    
+async def main():
+    """Main function"""
+    parser = argparse.ArgumentParser(description="AnyBot Console Client")
+    args = parser.parse_args()
 
-    
+    client = LocalClient()
+    try:
+        print("Starting AnyBot local client...")
+        print("Press Enter to start recording, and speak into the microphone")
+        print("The client will automatically detect when you stop speaking")
+        print("Type 'exit' to quit")
+        
+        # Create a BotChain instance with this client
+        from app.services.chain import BotChain
+        chain = BotChain(client)
+        
+        # Start the BotChain
+        await chain.start()
+    except KeyboardInterrupt:
+        print("\nExiting...")
+    finally:
+        # Close the client
+        await chain.stop()
 
+
+if __name__ == "__main__":
+    asyncio.run(main())

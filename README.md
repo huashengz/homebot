@@ -253,24 +253,61 @@ pytest
 anybot/
 ├── app/
 │   ├── api/                 # API routes
-│   │   └── v1/
+│   │   └── v1/              # API version 1
 │   │       ├── endpoints/   # Individual endpoints
+│   │       │   ├── health.py    # Health check endpoints
+│   │       │   ├── chat.py      # Chat endpoints
+│   │       │   └── voice.py     # Voice endpoints
 │   │       └── api.py       # API router
-│   ├── core/                # Core configuration
-│   │   └── config.py        # Settings
+│   ├── config/              # Configuration
+│   │   └── settings.py      # Settings
+│   ├── core/                # Core functionality
+│   ├── devices/             # Device management
+│   │   ├── base.py          # Base device class
+│   │   ├── manager.py       # Device manager
+│   │   └── xiaomi_cuco_switch.py # Xiaomi Cuco switch
 │   ├── services/            # Business logic
-│   │   ├── langchain/       # AI chat service
-│   │   └── voice/           # Speech processing
+│   │   ├── chat/            # Chat services
+│   │   │   ├── llm.py       # LLM integration
+│   │   │   └── prompt.jinja # Prompt template
+│   │   ├── voice/           # Speech processing
+│   │   │   ├── __init__.py  # Voice service init
+│   │   │   ├── mp3player.py # MP3 player
+│   │   │   ├── stt.py       # Speech-to-text
+│   │   │   └── tts.py       # Text-to-speech
+│   │   ├── __init__.py      # Services init
+│   │   ├── callback.py      # Callbacks
+│   │   └── chain.py         # Bot chain
 │   ├── models/              # Data models
 │   ├── utils/               # Utilities
-│   └── main.py              # FastAPI application
+│   ├── static/              # Static files
+│   │   └── index.html       # Web interface
+│   ├── __init__.py          # App init
+│   ├── api.py               # Main API router
+│   ├── client.py            # WebSocket client
+│   ├── log.py               # Logging configuration
+│   ├── main.py              # FastAPI application
+│   └── schemas.py           # Pydantic models
+├── client/                  # Client applications
+│   ├── bot.py               # Bot client
+│   └── console.py           # Console client
+├── resources/               # Resources
+│   ├── porcupine_params_zh.pv # Porcupine model
+│   └── 豆豆_zh_mac_v4_0_0.ppn  # Custom wake word
 ├── tests/                   # Tests
-├── static/                  # Static files
-├── uploads/                 # File uploads
+│   ├── test_asr.py          # ASR tests
+│   ├── test_chain.py        # Chain tests
+│   ├── test_tts.py          # TTS tests
+│   └── test_xiaomi_power.py # Xiaomi power tests
+├── .env                     # Environment variables
+├── .env.example             # Environment template
+├── .gitignore               # Git ignore file
+├── Dockerfile               # Dockerfile
+├── README.md               # This file
+├── docker-compose.yml       # Docker Compose file
 ├── pyproject.toml           # Project configuration
 ├── requirements.txt         # Dependencies
-├── .env.example             # Environment template
-└── README.md               # This file
+└── setup.py                 # Setup script
 ```
 
 ## Configuration
@@ -284,7 +321,7 @@ Key environment variables:
 - `OPENAI_MAX_TOKENS`: Maximum response length
 
 ### Aliyun Configuration
-- `ALIYUN_ACCESS_KEY`: Alibaba Cloud access key ID
+- `ALIYUN_ACCESS_KEY_ID`: Alibaba Cloud access key ID
 - `ALIYUN_ACCESS_KEY_SECRET`: Alibaba Cloud access key secret
 - `ALIYUN_REGION_ID`: Alibaba Cloud region (default: cn-shanghai)
 - `ALIYUN_ASR_APP_KEY`: Aliyun ASR application key

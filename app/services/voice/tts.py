@@ -49,7 +49,10 @@ class DashscopeTTS:
         pass
 
     async def stop(self):
-        self.synthesizer.async_streaming_complete()
+        try:
+            self.synthesizer.async_streaming_complete()
+        except Exception as e:
+            logger.error(f"Error stopping TTS: {e}")
 
     async def synthesize(self, text: str, is_final: bool = False):
         try:

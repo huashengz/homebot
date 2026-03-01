@@ -93,3 +93,14 @@ class DashscopeSTT:
             await self.stop()
         if is_final:
             await self.stop()
+
+    async def texts(self) -> AsyncGenerator[str, None]:
+        """Generate recognized texts"""
+        while True:
+            try:
+                text, is_final = await self.callback.callback.text_queue.get()
+                yield text
+                if is_final:
+                    break
+            except asyncio.CancelledError:
+                break

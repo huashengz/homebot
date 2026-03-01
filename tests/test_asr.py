@@ -5,10 +5,20 @@ import asyncio
 import pyaudio
 import time
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from app.services.voice.asr import DashscopeSTT
+from app.services.voice.stt import DashscopeSTT
+from app.services.callback import ChainCallback
 
 logging.basicConfig(level=logging.INFO)
-asr = DashscopeSTT()
+
+# Create queues for callback
+text_queue = asyncio.Queue()
+audio_queue = asyncio.Queue()
+
+# Create callback
+callback = ChainCallback(text_queue, audio_queue)
+
+# Create ASR instance
+asr = DashscopeSTT(callback)
 
 async def print_texts(asr: DashscopeSTT):
     print("Starting to print recognized texts...")

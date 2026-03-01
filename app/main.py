@@ -37,3 +37,9 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 @app.get("/")
 async def root():
     return FileResponse("app/static/index.html")
+
+
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
+

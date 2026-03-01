@@ -91,3 +91,5 @@ yarn-debug.log*
 yarn-error.log*
 
 app/config/settings.py
+
+.trae

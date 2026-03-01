@@ -417,7 +417,8 @@
 
             connectWebSocket() {
                 const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-                this.ws = new WebSocket(`${protocol}//${location.host}/ws`);
+                const clientId = 'client_' + Math.random().toString(36).substr(2, 9);
+                this.ws = new WebSocket(`${protocol}//${location.host}/api/v1/ws/chat/${clientId}`);
                 this.ws.binaryType = 'arraybuffer';
                 this.currentTurnAudioChunks = [];
                 this.lastBotMessageEl = null;

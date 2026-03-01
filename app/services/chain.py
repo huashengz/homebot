@@ -11,7 +11,7 @@ from app.services.voice.stt import DashscopeSTT
 from app.services.voice.tts import DashscopeTTS
 from app.schemas import Step, Role, Payload, Message, CMD, DeviceEvent
 from app.services.callback import ChainCallback
-from app.client import BaseClient
+from app.client.base import BaseClient
 
 logger = logging.getLogger(__name__)
 
@@ -94,8 +94,8 @@ class BotChain:
 
     async def start(self):
         logger.info("Starting BotChain...")
-        await self.client.connect()
         self.step = Step.ASR
+        await self.client.start()
 
         receive_task = asyncio.create_task(self.process_audio_receive())
         generate_task = asyncio.create_task(self.process_llm_generate())
@@ -117,12 +117,12 @@ class BotChain:
 
     async def stop(self):
         logger.info("Stopping BotChain...")
-        await self.client.close()
-        await self.state.clear()
+        await self.client.stop()
         await self.stt.stop()
         await self.tts.stop()
         await self.llm.stop()
         self.tasks.clear()
+        await self.state.clear()
 
     async def process_audio_receive(self):
         try:
